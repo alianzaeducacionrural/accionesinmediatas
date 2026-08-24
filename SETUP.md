@@ -40,7 +40,21 @@ https://drive.google.com/drive/folders/1cG8pP4XexZ66pnYQn29PrazjIbXFOqdD
 Cada vez que cambies `Code.gs` después de esto: `clasp push --force` y luego
 **Implementar → Gestionar implementaciones → editar (lápiz) → Nueva
 versión → Implementar** (mantiene la misma URL `/exec`, no crear una
-implementación nueva).
+implementación nueva). Por CLI equivale a:
+```bash
+clasp push --force
+clasp deployments                          # copiar el deploymentId activo
+clasp update-deployment <deploymentId>     # crea versión nueva y la publica en la misma URL
+```
+**Verifica siempre después de un `clasp push`** que el cambio realmente
+llegó — hubo un caso en este proyecto donde `clasp push --force` reportó
+éxito pero el contenido remoto (`HEAD`) no cambió. Confirmar con:
+```bash
+curl -s "<URL>/exec?accion=reportantes"
+```
+
+Ya probado de punta a punta (GET, POST con upsert, normalización a Nombre
+Propio y eliminación) contra el backend desplegado — funciona correctamente.
 
 ## 3. Probar el formulario
 
