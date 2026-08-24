@@ -175,7 +175,11 @@ async function cargarMisReportes() {
 function retomarRegistro(r) {
   elSelectDepartamento.value = r.departamento;
   elListaInstituciones.innerHTML = '';
-  agregarInstitucion({ municipio: r.municipio, institucion: r.institucion, sedes: [r] });
+  agregarInstitucion({
+    municipio: r.municipio, institucion: r.institucion,
+    rector: r.rector, telefonoRector: r.telefonoRector, correoRector: r.correoRector,
+    sedes: [r],
+  });
   guardarBorrador();
   const destino = document.getElementById('listaInstituciones');
   if (destino.scrollIntoView) destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -435,6 +439,15 @@ function agregarInstitucion(datosPrevios) {
   });
   nodo.querySelector('.btn-agregar-sede').addEventListener('click', () => { agregarSede(nodo); guardarBorrador(); });
 
+  // Rector: dato general de la institución (y de todas sus sedes), no se
+  // repite por sede.
+  const inputRector = nodo.querySelector('.input-rector');
+  const inputRectorTelefono = nodo.querySelector('.input-rector-telefono');
+  const inputRectorCorreo = nodo.querySelector('.input-rector-correo');
+  inputRector.addEventListener('input', (e) => { previsualizarNombrePropio(e.target); guardarBorrador(); });
+  inputRectorTelefono.addEventListener('input', () => guardarBorrador());
+  inputRectorCorreo.addEventListener('input', () => guardarBorrador());
+
   elListaInstituciones.appendChild(nodo);
   renumerarInstituciones();
 
@@ -442,6 +455,9 @@ function agregarInstitucion(datosPrevios) {
     if (datosPrevios.institucion) {
       seleccionarValorConOtra(selectInst, inputOtra, campoSelect, campoOtra, datosPrevios.institucion);
     }
+    inputRector.value = datosPrevios.rector || '';
+    inputRectorTelefono.value = datosPrevios.telefonoRector || '';
+    inputRectorCorreo.value = datosPrevios.correoRector || '';
     (datosPrevios.sedes || []).forEach((s) => agregarSede(nodo, s));
   } else {
     agregarSede(nodo);
@@ -475,13 +491,8 @@ function agregarSede(institucionBloque, datosPrevios) {
   configurarChipsAfectacion(nodo);
   configurarChipsAcciones(nodo);
 
-  ['.input-vereda', '.input-rector'].forEach((sel) => {
-    nodo.querySelector(sel).addEventListener('input', (e) => { previsualizarNombrePropio(e.target); guardarBorrador(); });
-  });
-  ['.input-rector-telefono', '.input-rector-correo'].forEach((sel) => {
-    nodo.querySelector(sel).addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(nodo); });
-  });
-  ['.textarea-descripcion', '.textarea-acciones'].forEach((sel) => {
+  nodo.querySelector('.input-vereda').addEventListener('input', (e) => { previsualizarNombrePropio(e.target); guardarBorrador(); });
+  ['.textarea-descripcion', '.textarea-recursos-externos', '.textarea-aporte-departamento'].forEach((sel) => {
     nodo.querySelector(sel).addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(nodo); });
   });
 
@@ -491,12 +502,10 @@ function agregarSede(institucionBloque, datosPrevios) {
   if (datosPrevios) {
     if (datosPrevios.sede) seleccionarValorConOtra(selectSede, inputOtra, campoSelect, campoOtra, datosPrevios.sede);
     nodo.querySelector('.input-vereda').value = datosPrevios.vereda || '';
-    nodo.querySelector('.input-rector').value = datosPrevios.rector || '';
-    nodo.querySelector('.input-rector-telefono').value = datosPrevios.telefonoRector || '';
-    nodo.querySelector('.input-rector-correo').value = datosPrevios.correoRector || '';
     nodo.querySelector('.input-estudiantes').value = datosPrevios.numeroEstudiantes || '';
     nodo.querySelector('.textarea-descripcion').value = datosPrevios.descripcionAfectaciones || '';
-    nodo.querySelector('.textarea-acciones').value = datosPrevios.accionesInmediatas || '';
+    nodo.querySelector('.textarea-recursos-externos').value = datosPrevios.necesidadRecursosExternos || '';
+    nodo.querySelector('.textarea-aporte-departamento').value = datosPrevios.aporteDepartamento || '';
     (datosPrevios.afectaciones || []).forEach((a) => {
       const chip = nodo.querySelector(`.chips-afectacion .chip[data-valor="${cssEscape(a)}"]`);
       if (chip) chip.classList.add('activo');
@@ -562,15 +571,13 @@ function configurarChipsAcciones(sedeBloque) {
 function actualizarBadgeEstadoSede(sedeBloque) {
   const badge = sedeBloque.querySelector('.badge-estado-sede');
   if (!badge) return;
-  const rector = sedeBloque.querySelector('.input-rector').value.trim();
-  const telefonoRector = sedeBloque.querySelector('.input-rector-telefono').value.trim();
-  const correoRector = sedeBloque.querySelector('.input-rector-correo').value.trim();
   const estudiantes = sedeBloque.querySelector('.input-estudiantes').value;
   const afectaciones = sedeBloque.querySelectorAll('.chips-afectacion .chip.activo').length;
   const accionesSugeridas = sedeBloque.querySelectorAll('.chip-accion.activo').length;
   const descripcion = sedeBloque.querySelector('.textarea-descripcion').value.trim();
-  const acciones = sedeBloque.querySelector('.textarea-acciones').value.trim();
-  const completo = !!(rector || telefonoRector || correoRector || estudiantes !== '' || afectaciones || accionesSugeridas || descripcion || acciones);
+  const recursosExternos = sedeBloque.querySelector('.textarea-recursos-externos').value.trim();
+  const aporteDepartamento = sedeBloque.querySelector('.textarea-aporte-departamento').value.trim();
+  const completo = !!(estudiantes !== '' || afectaciones || accionesSugeridas || descripcion || recursosExternos || aporteDepartamento);
   badge.textContent = completo ? 'Completo' : 'Borrador';
   badge.classList.toggle('completo', completo);
   badge.classList.toggle('borrador', !completo);
@@ -582,6 +589,9 @@ function recopilarInstituciones() {
   return [...elListaInstituciones.querySelectorAll('.institucion-bloque')].map((bi) => ({
     municipio: bi.querySelector('.select-municipio').value,
     institucion: nombreInstitucion(bi),
+    rector: nombrePropio(bi.querySelector('.input-rector').value),
+    telefonoRector: bi.querySelector('.input-rector-telefono').value.trim(),
+    correoRector: bi.querySelector('.input-rector-correo').value.trim(),
     sedes: [...bi.querySelectorAll('.sede-bloque')].map((bs) => recopilarSede(bs)),
   }));
 }
@@ -590,14 +600,12 @@ function recopilarSede(bs) {
   return {
     sede: nombreSede(bs),
     vereda: nombrePropio(bs.querySelector('.input-vereda').value),
-    rector: nombrePropio(bs.querySelector('.input-rector').value),
-    telefonoRector: bs.querySelector('.input-rector-telefono').value.trim(),
-    correoRector: bs.querySelector('.input-rector-correo').value.trim(),
     numeroEstudiantes: bs.querySelector('.input-estudiantes').value,
     afectaciones: [...bs.querySelectorAll('.chips-afectacion .chip.activo')].map((c) => c.dataset.valor),
     descripcionAfectaciones: bs.querySelector('.textarea-descripcion').value.trim(),
     accionesSugeridas: [...bs.querySelectorAll('.chip-accion.activo')].map((c) => c.dataset.valor),
-    accionesInmediatas: bs.querySelector('.textarea-acciones').value.trim(),
+    necesidadRecursosExternos: bs.querySelector('.textarea-recursos-externos').value.trim(),
+    aporteDepartamento: bs.querySelector('.textarea-aporte-departamento').value.trim(),
   };
 }
 
@@ -671,7 +679,11 @@ async function enviarTodo() {
   const items = [];
   instituciones.forEach((inst) => {
     inst.sedes.forEach((sede) => {
-      items.push({ municipio: inst.municipio, institucion: inst.institucion, ...sede, estadoEnvio: 'pendiente', error: '' });
+      items.push({
+        municipio: inst.municipio, institucion: inst.institucion,
+        rector: inst.rector, telefonoRector: inst.telefonoRector, correoRector: inst.correoRector,
+        ...sede, estadoEnvio: 'pendiente', error: '',
+      });
     });
   });
   if (!items.length) return;
@@ -722,7 +734,8 @@ async function procesarEnvio(reportante, departamento, items) {
         afectaciones: item.afectaciones,
         descripcionAfectaciones: item.descripcionAfectaciones,
         accionesSugeridas: item.accionesSugeridas,
-        accionesInmediatas: item.accionesInmediatas,
+        necesidadRecursosExternos: item.necesidadRecursosExternos,
+        aporteDepartamento: item.aporteDepartamento,
       });
       item.estadoEnvio = 'ok';
       fila.className = 'progreso-item ok';

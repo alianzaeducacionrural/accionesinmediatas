@@ -35,7 +35,8 @@ var HEADERS_REGISTROS = [
   'Departamento', 'Municipio', 'Vereda', 'Institución', 'Sede', 'Rector',
   'Correo rector', 'Teléfono rector',
   'Número de estudiantes', 'Tipos de afectación', 'Descripción de afectaciones',
-  'Acciones sugeridas', 'Acciones inmediatas', 'Estado',
+  'Acciones sugeridas', 'Necesidad de recursos externos',
+  'Aporte del departamento', 'Estado',
 ];
 
 // Índices 1-based de columnas.
@@ -44,7 +45,7 @@ var COL = {
   DEPARTAMENTO: 7, MUNICIPIO: 8, VEREDA: 9, INSTITUCION: 10, SEDE: 11,
   RECTOR: 12, CORREO_RECTOR: 13, TELEFONO_RECTOR: 14,
   ESTUDIANTES: 15, AFECTACIONES: 16, DESCRIPCION: 17,
-  ACCIONES_SUGERIDAS: 18, ACCIONES: 19, ESTADO: 20,
+  ACCIONES_SUGERIDAS: 18, RECURSOS_EXTERNOS: 19, APORTE_DEPARTAMENTO: 20, ESTADO: 21,
 };
 
 var DEPARTAMENTOS_VALIDOS = ['Caldas', 'Risaralda', 'Quindío', 'Valle del Cauca'];
@@ -210,7 +211,8 @@ function filaAObjeto_(f) {
     afectaciones: afectaciones,
     descripcionAfectaciones: f[COL.DESCRIPCION - 1],
     accionesSugeridas: accionesSugeridas,
-    accionesInmediatas: f[COL.ACCIONES - 1],
+    necesidadRecursosExternos: f[COL.RECURSOS_EXTERNOS - 1],
+    aporteDepartamento: f[COL.APORTE_DEPARTAMENTO - 1],
     estado: f[COL.ESTADO - 1],
   };
 }
@@ -262,7 +264,8 @@ function guardarRegistro_(datos) {
   var afectaciones = Array.isArray(datos.afectaciones) ? datos.afectaciones : [];
   var descripcionAfectaciones = String(datos.descripcionAfectaciones || '').trim();
   var accionesSugeridas = Array.isArray(datos.accionesSugeridas) ? datos.accionesSugeridas : [];
-  var accionesInmediatas = String(datos.accionesInmediatas || '').trim();
+  var necesidadRecursosExternos = String(datos.necesidadRecursosExternos || '').trim();
+  var aporteDepartamento = String(datos.aporteDepartamento || '').trim();
 
   if (!reportante) throw new Error('Falta el nombre del reportante.');
   if (DEPARTAMENTOS_VALIDOS.indexOf(departamento) === -1) throw new Error('Departamento no válido: ' + departamento);
@@ -283,7 +286,7 @@ function guardarRegistro_(datos) {
       throw new Error('La sede "' + sede + '" ya fue registrada por ' + existente.valores[COL.REPORTANTE - 1] + '.');
     }
 
-    var tieneContenido = !!(rector || correoRector || telefonoRector || numeroEstudiantes !== '' || afectaciones.length || descripcionAfectaciones || accionesSugeridas.length || accionesInmediatas);
+    var tieneContenido = !!(rector || correoRector || telefonoRector || numeroEstudiantes !== '' || afectaciones.length || descripcionAfectaciones || accionesSugeridas.length || necesidadRecursosExternos || aporteDepartamento);
     var estado = tieneContenido ? 'Completo' : 'Borrador';
     var ahora = new Date();
 
@@ -295,7 +298,7 @@ function guardarRegistro_(datos) {
       departamento, municipio, vereda, institucion, sede, rector,
       correoRector, comoTexto_(telefonoRector),
       numeroEstudiantes, JSON.stringify(afectaciones), descripcionAfectaciones,
-      JSON.stringify(accionesSugeridas), accionesInmediatas, estado,
+      JSON.stringify(accionesSugeridas), necesidadRecursosExternos, aporteDepartamento, estado,
     ];
 
     if (existente) {

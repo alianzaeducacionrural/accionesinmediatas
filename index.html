@@ -201,6 +201,21 @@
         <input class="control input-institucion-otra" placeholder="Ej. Institución Educativa El Edén" />
       </div>
 
+      <div class="campo">
+        <label>Nombre del rector</label>
+        <input class="control input-rector" placeholder="Ej. Carlos Andrés Gómez" />
+      </div>
+      <div class="campo-fila">
+        <div class="campo">
+          <label>Teléfono del rector</label>
+          <input class="control input-rector-telefono" type="tel" placeholder="300 000 0000" />
+        </div>
+        <div class="campo">
+          <label>Correo del rector</label>
+          <input class="control input-rector-correo" type="email" placeholder="correo@ejemplo.com" />
+        </div>
+      </div>
+
       <div class="sedes-lista"></div>
       <button type="button" class="btn btn-agregar btn-agregar-sede">
         <svg class="icono-svg"><use href="#icono-mas"></use></svg>
@@ -232,26 +247,9 @@
         <input class="control input-sede-otra" placeholder="Ej. Central" />
       </div>
 
-      <div class="campo-fila">
-        <div class="campo">
-          <label>Vereda</label>
-          <input class="control input-vereda" placeholder="Ej. La Esperanza" />
-        </div>
-        <div class="campo">
-          <label>Nombre del rector</label>
-          <input class="control input-rector" placeholder="Ej. Carlos Andrés Gómez" />
-        </div>
-      </div>
-
-      <div class="campo-fila">
-        <div class="campo">
-          <label>Teléfono del rector</label>
-          <input class="control input-rector-telefono" type="tel" placeholder="300 000 0000" />
-        </div>
-        <div class="campo">
-          <label>Correo del rector</label>
-          <input class="control input-rector-correo" type="email" placeholder="correo@ejemplo.com" />
-        </div>
+      <div class="campo">
+        <label>Vereda</label>
+        <input class="control input-vereda" placeholder="Ej. La Esperanza" />
       </div>
 
       <div class="campo">
@@ -316,8 +314,13 @@
       </div>
 
       <div class="campo">
-        <label>Detalle adicional de acciones</label>
-        <textarea class="control textarea-acciones" placeholder="Cualquier otra acción específica para esta sede…"></textarea>
+        <label>Necesidad de recursos externos</label>
+        <textarea class="control textarea-recursos-externos" placeholder="¿Qué recursos externos se necesitan para esta sede?"></textarea>
+      </div>
+
+      <div class="campo">
+        <label>Aporte del departamento (Comité de Cafeteros u otros aliados)</label>
+        <textarea class="control textarea-aporte-departamento" placeholder="¿Qué puede aportar el departamento u otros aliados?"></textarea>
       </div>
     </div>
   </div>

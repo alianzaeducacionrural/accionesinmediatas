@@ -44,11 +44,15 @@ Google Sheets "Acciones inmediatas por departamento — Registro" (pestaña "reg
   visibles, un único botón "Enviar registros" valida todo de una vez).
   Repetidores con `<template>` + clonado de nodos, cada institución con su
   propio selector de municipio (para poder mezclar varios municipios del
-  mismo departamento en un solo envío), selects con opción "No está en la
-  lista" que revela un campo de texto, chips de afectación y de acciones
-  sugeridas, borrador en `localStorage`, "Mis reportes guardados"
-  (recuperar/editar lo ya enviado) y envío secuencial sede por sede con
-  reintento de las que fallen.
+  mismo departamento en un solo envío) y su propio rector (nombre, teléfono,
+  correo — dato general de la institución y de todas sus sedes, no se repite
+  por sede), selects con opción "No está en la lista" que revela un campo de
+  texto, chips de afectación y de acciones sugeridas, borrador en
+  `localStorage`, "Mis reportes guardados" (recuperar/editar lo ya enviado)
+  y envío secuencial sede por sede con reintento de las que fallen. Al
+  enviar, cada sede hereda el rector de su institución (`enviarTodo`) — la
+  fila del Sheet sigue siendo una por sede, el rector solo se captura una
+  vez en el formulario.
 - [gas/Code.gs](gas/Code.gs) — backend. `inicializar()` crea el spreadsheet
   (una vez) dentro de la carpeta de Drive del proyecto y siembra la pestaña
   `registros`.
@@ -73,20 +77,29 @@ cambiarlo a `application/json`.**
 Teléfono reportante · Departamento · Municipio · Vereda · Institución ·
 Sede · Rector · Correo rector · Teléfono rector · Número de estudiantes ·
 Tipos de afectación (JSON) · Descripción de afectaciones · Acciones
-sugeridas (JSON) · Acciones inmediatas · Estado`
+sugeridas (JSON) · Necesidad de recursos externos · Aporte del
+departamento · Estado`
+
+`Rector`/`Correo rector`/`Teléfono rector` se capturan una sola vez por
+institución en el formulario, pero se guardan repetidos en cada fila de
+sede — el Sheet sigue siendo una fila por sede (no hay una pestaña aparte
+de instituciones); ver `enviarTodo()` en `js/formulario.js`, que copia el
+rector de la institución a cada `item` antes de enviarlo.
 
 `Estado` es `Borrador` (sede guardada sin rector/estudiantes/afectaciones/
-descripción/acciones/acciones sugeridas) o `Completo`. La vereda se pide
-por sede, no por institución — una misma institución puede tener sedes en
-veredas distintas. Los teléfonos (`Teléfono reportante`, `Teléfono rector`)
-se guardan forzados a texto (`comoTexto_` en `gas/Code.gs`, prefijo de
-comilla simple) — sin eso Sheets los convierte a número y arriesga perder
-ceros a la izquierda.
+descripción/acciones sugeridas/recursos/aporte) o `Completo`. La vereda se
+pide por sede, no por institución — una misma institución puede tener
+sedes en veredas distintas. Los teléfonos (`Teléfono reportante`,
+`Teléfono rector`) se guardan forzados a texto (`comoTexto_` en
+`gas/Code.gs`, prefijo de comilla simple) — sin eso Sheets los convierte a
+número y arriesga perder ceros a la izquierda.
 
 "Acciones sugeridas" son chips de selección múltiple (checklist de
 acciones típicas post-sismo: inmediatas, corto plazo, mediano plazo,
-definidas en `index.html` dentro de `#tpl-sede`); "Acciones inmediatas" es
-el campo de texto libre para el detalle adicional que no cubran los chips.
+definidas en `index.html` dentro de `#tpl-sede`). "Necesidad de recursos
+externos" y "Aporte del departamento (Comité de Cafeteros u otros
+aliados)" son los dos campos de texto libre por sede — reemplazaron al
+antiguo "Acciones inmediatas" de texto libre.
 
 ## Despliegue del backend — usa `clasp`, no copiar/pegar
 
