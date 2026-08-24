@@ -57,6 +57,17 @@ pestaña "registros" del spreadsheet con los nombres en formato Nombre Propio.
 
 ## Publicar el sitio
 
-Este formulario todavía no está en un repositorio ni tiene hosting público.
-Cuando quieras publicarlo (GitHub Pages, Vercel u otro), dímelo y lo dejamos
-desplegado — falta decidir dónde.
+Ya está en GitHub Pages:
+
+- Repositorio: https://github.com/alianzaeducacionrural/accionesinmediatas
+- Sitio: **https://alianzaeducacionrural.github.io/accionesinmediatas/**
+
+El sitio se actualiza solo con cada push a `main`:
+
+```bash
+git add -A
+git commit -m "..."
+git push
+```
+
+GitHub Pages tarda uno o dos minutos en reflejar cada push.
