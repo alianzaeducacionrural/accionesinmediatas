@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Documento de requisitos interno — no hace falta publicarlo en el repo.
+BASE DE DATOS  EN LÍNEA.docx

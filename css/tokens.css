@@ -1,0 +1,139 @@
+/* ================================================
+   TOKENS — Acciones inmediatas por departamento
+   Paleta propia: índigo profundo + acento ámbar. Distinta a propósito de la
+   terracota de "Encuesta Daños por sismo" y del verde del resto del
+   programa, para que esta plataforma se distinga de un vistazo.
+   ================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+
+:root {
+  /* Neutros fríos */
+  --papel:      #F7F8FC;
+  --superficie: #FFFFFF;
+  --tinta-900:  #14172B;
+  --tinta-700:  #3A4060;
+  --tinta-600:  #565D82;
+  --tinta-400:  #8A90AE;
+  --tinta-300:  #C1C6DE;
+  --borde:      #E2E5F0;
+  --borde-suave:#EDEFF6;
+
+  /* Marca — índigo */
+  --indigo-800: #232A63;
+  --indigo-700: #2C3480;
+  --indigo-600: #37489C;
+  --indigo-500: #4A5DBE;
+  --indigo-300: #A7B2E3;
+  --indigo-100: #E7EAFA;
+  --indigo-50:  #F1F3FC;
+
+  /* Acento — ámbar */
+  --ambar-600:  #C8790F;
+  --ambar-500:  #E8981F;
+  --ambar-300:  #F5C777;
+  --ambar-100:  #FDF0D8;
+
+  /* Semántico: éxito / completo */
+  --exito-ink:  #1F5C38;
+  --exito:      #2F7A4F;
+  --exito-bg:   #E6F3EA;
+  --exito-borde:#A9D9BB;
+
+  /* Semántico: borrador / atención */
+  --alerta-ink: #8F5C0A;
+  --alerta:     #D99A2B;
+  --alerta-bg:  #FCF1DC;
+  --alerta-borde:#F0CE8E;
+
+  /* Semántico: error */
+  --peligro-ink:#8A2C22;
+  --peligro:    #B23A2E;
+  --peligro-bg: #FBEAE7;
+  --peligro-borde:#EFC0B7;
+
+  /* Semántico: informativo */
+  --info-ink:   #2B4E7A;
+  --info:       #3D6FA6;
+  --info-bg:    #EAF1F8;
+  --info-borde: #BFD7EC;
+
+  --sombra-xs:  0 1px 2px rgba(20,23,43,0.06);
+  --sombra-sm:  0 2px 6px rgba(20,23,43,0.07), 0 1px 2px rgba(20,23,43,0.05);
+  --sombra:     0 8px 24px rgba(20,23,43,0.10), 0 2px 8px rgba(20,23,43,0.05);
+  --sombra-lg:  0 16px 44px rgba(20,23,43,0.14), 0 4px 14px rgba(20,23,43,0.07);
+
+  --radio:      16px;
+  --radio-sm:   11px;
+  --radio-pill: 100px;
+
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast:     0.15s var(--ease-out);
+  --t:          0.22s var(--ease-out);
+  --t-slow:     0.4s var(--ease-out);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  background: var(--papel);
+  color: var(--tinta-900);
+  min-height: 100vh;
+  line-height: 1.55;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: 'Sora', sans-serif; line-height: 1.2; letter-spacing: -0.01em; }
+
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; font-size: 1rem; }
+
+a { color: var(--indigo-600); }
+
+.oculto { display: none !important; }
+
+:focus-visible {
+  outline: 2.5px solid var(--indigo-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.icono-svg {
+  width: 1em;
+  height: 1em;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: -0.15em;
+}
+
+.spinner {
+  width: 34px; height: 34px; margin: 0 auto 16px;
+  border: 3px solid var(--indigo-100); border-top-color: var(--indigo-600);
+  border-radius: 50%; animation: girar 0.7s linear infinite;
+}
+.spinner-sm {
+  width: 16px; height: 16px;
+  border: 2px solid var(--info-borde); border-top-color: var(--info);
+  border-radius: 50%; animation: girar 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
