@@ -30,10 +30,6 @@
     <path d="M4 21h16"/>
     <path d="M8 8h1M8 12h1M8 16h1M16 14h1M16 18h1"/>
   </symbol>
-  <symbol id="icono-portapapeles" viewBox="0 0 24 24">
-    <path d="M9 3.6h6a1 1 0 0 1 1 1V6h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1V4.6a1 1 0 0 1 1-1Z"/>
-    <path d="M9 12h6M9 16h4"/>
-  </symbol>
   <symbol id="icono-mas" viewBox="0 0 24 24">
     <path d="M12 5v14M5 12h14"/>
   </symbol>
@@ -72,12 +68,6 @@
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" stroke-linejoin="round"/>
     <path d="M17 21v-8H7v8M7 3v5h8"/>
   </symbol>
-  <symbol id="icono-flecha-izq" viewBox="0 0 24 24">
-    <path d="m15 6-6 6 6 6"/>
-  </symbol>
-  <symbol id="icono-flecha-der" viewBox="0 0 24 24">
-    <path d="m9 6 6 6-6 6"/>
-  </symbol>
 </svg>
 
 <header class="header">
@@ -93,13 +83,6 @@
       Quindío y el Valle del Cauca.
     </p>
 
-    <div class="progreso-pasos" id="progresoPasos">
-      <div class="progreso-paso activo" data-paso="1"><span class="num">1</span><span class="etiqueta">Reportante</span></div>
-      <div class="progreso-linea"></div>
-      <div class="progreso-paso" data-paso="2"><span class="num">2</span><span class="etiqueta">Sedes</span></div>
-      <div class="progreso-linea"></div>
-      <div class="progreso-paso" data-paso="3"><span class="num">3</span><span class="etiqueta">Revisión</span></div>
-    </div>
   </div>
 </header>
 
@@ -107,82 +90,61 @@
 
   <form id="formulario" novalidate>
 
-    <!-- ═══ PASO 1 — Quién reporta ═══ -->
-    <section class="paso" id="paso1" data-paso="1">
-      <div class="card">
-        <div class="card-head">
-          <div class="icono"><svg class="icono-svg"><use href="#icono-usuario"></use></svg></div>
-          <div>
-            <h2>¿Quién reporta?</h2>
-            <div class="card-head-sub">Tus datos de contacto y el departamento donde vas a reportar</div>
+    <!-- ═══ ¿Quién reporta? ═══ -->
+    <section class="card">
+      <div class="card-head">
+        <div class="icono"><svg class="icono-svg"><use href="#icono-usuario"></use></svg></div>
+        <div>
+          <h2>¿Quién reporta?</h2>
+          <div class="card-head-sub">Tus datos de contacto y el departamento donde vas a reportar</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="campo">
+          <label for="reportanteNombre">Nombre completo <span class="req">*</span></label>
+          <input class="control" id="reportanteNombre" list="listaReportantes" placeholder="Ej. María Fernanda Ríos" autocomplete="off" required />
+          <datalist id="listaReportantes"></datalist>
+          <div class="previsualizacion oculto" id="previaNombreReportante"></div>
+        </div>
+        <div class="campo-fila">
+          <div class="campo">
+            <label for="reportanteCorreo">Correo</label>
+            <input class="control" type="email" id="reportanteCorreo" placeholder="correo@ejemplo.com" />
+          </div>
+          <div class="campo">
+            <label for="reportanteTelefono">Teléfono</label>
+            <input class="control" type="tel" id="reportanteTelefono" placeholder="300 000 0000" />
           </div>
         </div>
-        <div class="card-body">
-          <div class="campo">
-            <label for="reportanteNombre">Nombre completo <span class="req">*</span></label>
-            <input class="control" id="reportanteNombre" list="listaReportantes" placeholder="Ej. María Fernanda Ríos" autocomplete="off" required />
-            <datalist id="listaReportantes"></datalist>
-            <div class="previsualizacion oculto" id="previaNombreReportante"></div>
-          </div>
-          <div class="campo-fila">
-            <div class="campo">
-              <label for="reportanteCorreo">Correo</label>
-              <input class="control" type="email" id="reportanteCorreo" placeholder="correo@ejemplo.com" />
-            </div>
-            <div class="campo">
-              <label for="reportanteTelefono">Teléfono</label>
-              <input class="control" type="tel" id="reportanteTelefono" placeholder="300 000 0000" />
-            </div>
-          </div>
-          <div class="campo">
-            <label for="selectDepartamento">Departamento <span class="req">*</span></label>
-            <select class="control" id="selectDepartamento" required>
-              <option value="">— Selecciona un departamento —</option>
-            </select>
-          </div>
+        <div class="campo">
+          <label for="selectDepartamento">Departamento <span class="req">*</span></label>
+          <select class="control" id="selectDepartamento" required>
+            <option value="">— Selecciona un departamento —</option>
+          </select>
+        </div>
 
-          <div class="oculto" id="bloqueMisReportes">
-            <label>Ya tienes registros guardados</label>
-            <div class="mis-reportes" id="listaMisReportes"></div>
-          </div>
+        <div class="oculto" id="bloqueMisReportes">
+          <label>Ya tienes registros guardados</label>
+          <div class="mis-reportes" id="listaMisReportes"></div>
         </div>
       </div>
     </section>
 
-    <!-- ═══ PASO 2 — Instituciones y sedes ═══ -->
-    <section class="paso oculto" id="paso2" data-paso="2">
-      <div class="card">
-        <div class="card-head">
-          <div class="icono"><svg class="icono-svg"><use href="#icono-edificio"></use></svg></div>
-          <div>
-            <h2>Instituciones y sedes</h2>
-            <div class="card-head-sub">Agrega una o más instituciones — cada una puede ser de un municipio distinto — y dentro de cada una sus sedes afectadas</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div id="listaInstituciones"></div>
-          <button type="button" class="btn btn-agregar" id="btnAgregarInstitucion">
-            <svg class="icono-svg"><use href="#icono-mas"></use></svg>
-            Agregar institución educativa
-          </button>
+    <!-- ═══ Instituciones y sedes ═══ -->
+    <section class="card">
+      <div class="card-head">
+        <div class="icono"><svg class="icono-svg"><use href="#icono-edificio"></use></svg></div>
+        <div>
+          <h2>Instituciones y sedes</h2>
+          <div class="card-head-sub">Agrega una o más instituciones — cada una puede ser de un municipio distinto — y dentro de cada una sus sedes afectadas</div>
         </div>
       </div>
-    </section>
-
-    <!-- ═══ PASO 3 — Revisión y envío ═══ -->
-    <section class="paso oculto" id="paso3" data-paso="3">
-      <div class="card">
-        <div class="card-head">
-          <div class="icono"><svg class="icono-svg"><use href="#icono-portapapeles"></use></svg></div>
-          <div>
-            <h2>Revisión</h2>
-            <div class="card-head-sub">Verifica la información antes de enviarla</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div id="alertaRevision"></div>
-          <div id="listaRevision"></div>
-        </div>
+      <div class="card-body">
+        <div id="listaInstituciones"></div>
+        <button type="button" class="btn btn-agregar" id="btnAgregarInstitucion">
+          <svg class="icono-svg"><use href="#icono-mas"></use></svg>
+          Agregar institución educativa
+        </button>
       </div>
     </section>
 
@@ -192,15 +154,7 @@
     </div>
 
     <div class="acciones-paso">
-      <button type="button" class="btn btn-secundario oculto" id="btnAnterior">
-        <svg class="icono-svg"><use href="#icono-flecha-izq"></use></svg>
-        Anterior
-      </button>
-      <button type="button" class="btn btn-primario" id="btnSiguiente">
-        Siguiente
-        <svg class="icono-svg"><use href="#icono-flecha-der"></use></svg>
-      </button>
-      <button type="button" class="btn btn-primario oculto" id="btnEnviar">Enviar registros</button>
+      <button type="button" class="btn btn-primario btn-block" id="btnEnviar">Enviar registros</button>
     </div>
   </form>
 
@@ -289,6 +243,17 @@
         </div>
       </div>
 
+      <div class="campo-fila">
+        <div class="campo">
+          <label>Teléfono del rector</label>
+          <input class="control input-rector-telefono" type="tel" placeholder="300 000 0000" />
+        </div>
+        <div class="campo">
+          <label>Correo del rector</label>
+          <input class="control input-rector-correo" type="email" placeholder="correo@ejemplo.com" />
+        </div>
+      </div>
+
       <div class="campo">
         <label>Número de estudiantes</label>
         <div class="stepper">
@@ -328,8 +293,31 @@
       </div>
 
       <div class="campo">
-        <label>Acciones para ejecutar de manera inmediata</label>
-        <textarea class="control textarea-acciones" placeholder="¿Qué se necesita hacer ya en esta sede?"></textarea>
+        <label>Acciones inmediatas</label>
+        <div class="chips chips-acciones-grupo">
+          <button type="button" class="chip chip-accion" data-valor="Ruta de apoyo psicosocial y socioemocional para niños, docentes y familias">Ruta de apoyo psicosocial y socioemocional (niños, docentes y familias)</button>
+          <button type="button" class="chip chip-accion" data-valor="Campamentos, carpas o aulas temporales con baterías sanitarias temporales">Campamentos, carpas o aulas temporales con baterías sanitarias</button>
+          <button type="button" class="chip chip-accion" data-valor="Reposición de mobiliario, guías y dotación de restaurante u otros elementos afectados">Reposición de mobiliario, guías y dotación de restaurante</button>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Acciones a corto plazo</label>
+        <div class="chips chips-acciones-grupo">
+          <button type="button" class="chip chip-accion" data-valor="Valorar e intervenir las sedes con afectaciones graves o moderadas">Valorar e intervenir sedes con afectaciones graves o moderadas</button>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Acciones a mediano plazo</label>
+        <div class="chips chips-acciones-grupo">
+          <button type="button" class="chip chip-accion" data-valor="Construir las sedes que sufrieron colapso total o parcial">Construir sedes con colapso total o parcial</button>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Detalle adicional de acciones</label>
+        <textarea class="control textarea-acciones" placeholder="Cualquier otra acción específica para esta sede…"></textarea>
       </div>
     </div>
   </div>

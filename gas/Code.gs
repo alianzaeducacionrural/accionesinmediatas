@@ -33,16 +33,18 @@ var HEADERS_REGISTROS = [
   'id', 'Marca temporal', 'Actualizado',
   'Reportante', 'Correo reportante', 'Teléfono reportante',
   'Departamento', 'Municipio', 'Vereda', 'Institución', 'Sede', 'Rector',
+  'Correo rector', 'Teléfono rector',
   'Número de estudiantes', 'Tipos de afectación', 'Descripción de afectaciones',
-  'Acciones inmediatas', 'Estado',
+  'Acciones sugeridas', 'Acciones inmediatas', 'Estado',
 ];
 
 // Índices 1-based de columnas.
 var COL = {
   ID: 1, REPORTANTE: 4, CORREO: 5, TELEFONO: 6,
   DEPARTAMENTO: 7, MUNICIPIO: 8, VEREDA: 9, INSTITUCION: 10, SEDE: 11,
-  RECTOR: 12, ESTUDIANTES: 13, AFECTACIONES: 14, DESCRIPCION: 15,
-  ACCIONES: 16, ESTADO: 17,
+  RECTOR: 12, CORREO_RECTOR: 13, TELEFONO_RECTOR: 14,
+  ESTUDIANTES: 15, AFECTACIONES: 16, DESCRIPCION: 17,
+  ACCIONES_SUGERIDAS: 18, ACCIONES: 19, ESTADO: 20,
 };
 
 var DEPARTAMENTOS_VALIDOS = ['Caldas', 'Risaralda', 'Quindío', 'Valle del Cauca'];
@@ -187,6 +189,8 @@ function misRegistros_(nombreReportante) {
 function filaAObjeto_(f) {
   var afectaciones = [];
   try { afectaciones = JSON.parse(f[COL.AFECTACIONES - 1] || '[]'); } catch (e) { afectaciones = []; }
+  var accionesSugeridas = [];
+  try { accionesSugeridas = JSON.parse(f[COL.ACCIONES_SUGERIDAS - 1] || '[]'); } catch (e) { accionesSugeridas = []; }
   return {
     id: f[COL.ID - 1],
     marcaTemporal: f[1],
@@ -200,9 +204,12 @@ function filaAObjeto_(f) {
     institucion: f[COL.INSTITUCION - 1],
     sede: f[COL.SEDE - 1],
     rector: f[COL.RECTOR - 1],
+    correoRector: f[COL.CORREO_RECTOR - 1],
+    telefonoRector: f[COL.TELEFONO_RECTOR - 1],
     numeroEstudiantes: f[COL.ESTUDIANTES - 1],
     afectaciones: afectaciones,
     descripcionAfectaciones: f[COL.DESCRIPCION - 1],
+    accionesSugeridas: accionesSugeridas,
     accionesInmediatas: f[COL.ACCIONES - 1],
     estado: f[COL.ESTADO - 1],
   };
@@ -247,11 +254,14 @@ function guardarRegistro_(datos) {
   var institucion = nombrePropio_(datos.institucion);
   var sede = nombrePropio_(datos.sede);
   var rector = nombrePropio_(datos.rector);
+  var correoRector = String(datos.correoRector || '').trim();
+  var telefonoRector = String(datos.telefonoRector || '').trim();
   var numeroEstudiantes = datos.numeroEstudiantes === '' || datos.numeroEstudiantes === undefined || datos.numeroEstudiantes === null
     ? ''
     : parseInt(datos.numeroEstudiantes, 10) || 0;
   var afectaciones = Array.isArray(datos.afectaciones) ? datos.afectaciones : [];
   var descripcionAfectaciones = String(datos.descripcionAfectaciones || '').trim();
+  var accionesSugeridas = Array.isArray(datos.accionesSugeridas) ? datos.accionesSugeridas : [];
   var accionesInmediatas = String(datos.accionesInmediatas || '').trim();
 
   if (!reportante) throw new Error('Falta el nombre del reportante.');
@@ -264,7 +274,7 @@ function guardarRegistro_(datos) {
   lock.waitLock(30000);
   try {
     var sheet = getSheet_('registros');
-    if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS_REGISTROS);
+    asegurarEncabezadoRegistros_(sheet);
 
     var clave = claveRegistro_(departamento, municipio, institucion, sede);
     var existente = buscarFilaPorClave_(sheet, clave);
@@ -273,7 +283,7 @@ function guardarRegistro_(datos) {
       throw new Error('La sede "' + sede + '" ya fue registrada por ' + existente.valores[COL.REPORTANTE - 1] + '.');
     }
 
-    var tieneContenido = !!(rector || numeroEstudiantes !== '' || afectaciones.length || descripcionAfectaciones || accionesInmediatas);
+    var tieneContenido = !!(rector || correoRector || telefonoRector || numeroEstudiantes !== '' || afectaciones.length || descripcionAfectaciones || accionesSugeridas.length || accionesInmediatas);
     var estado = tieneContenido ? 'Completo' : 'Borrador';
     var ahora = new Date();
 
@@ -281,10 +291,11 @@ function guardarRegistro_(datos) {
       existente ? existente.valores[COL.ID - 1] : siguienteId_(sheet),
       existente ? existente.valores[1] : ahora,
       ahora,
-      reportante, correoReportante, telefonoReportante,
+      reportante, correoReportante, comoTexto_(telefonoReportante),
       departamento, municipio, vereda, institucion, sede, rector,
+      correoRector, comoTexto_(telefonoRector),
       numeroEstudiantes, JSON.stringify(afectaciones), descripcionAfectaciones,
-      accionesInmediatas, estado,
+      JSON.stringify(accionesSugeridas), accionesInmediatas, estado,
     ];
 
     if (existente) {
@@ -345,6 +356,34 @@ function getSheet_(nombre) {
   return sheet;
 }
 
+// Fuerza que un teléfono se guarde como texto y no como número. setValues
+// interpreta strings "que parecen número" igual que si se escribieran a
+// mano en Sheets — arriesgando perder ceros a la izquierda y complicando
+// el resto del código, que espera un string. La comilla simple al inicio
+// es la misma convención que usa la interfaz de Sheets para forzar texto:
+// Apps Script la respeta y no queda como caracter literal en la celda.
+function comoTexto_(valor) {
+  return valor ? "'" + valor : valor;
+}
+
+// Crea el encabezado de "registros" si la pestaña está vacía, o lo
+// reescribe si cambió HEADERS_REGISTROS y todavía no hay filas de datos
+// reales — así el esquema se puede evolucionar sin migración manual
+// mientras el Sheet siga vacío. Nunca toca una pestaña con datos.
+function asegurarEncabezadoRegistros_(sheet) {
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HEADERS_REGISTROS);
+    return;
+  }
+  if (sheet.getLastRow() === 1) {
+    var actual = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0].join('|');
+    if (actual !== HEADERS_REGISTROS.join('|')) {
+      sheet.clearContents();
+      sheet.appendRow(HEADERS_REGISTROS);
+    }
+  }
+}
+
 // ─── Inicialización (ejecutar UNA vez a mano) ───────────────
 // Si RESULTS_SHEET_ID está vacío, crea el spreadsheet y muestra su ID en el
 // Logger — cópialo a la constante de arriba para que quede fijo. Si ya
@@ -362,7 +401,8 @@ function inicializar() {
   }
 
   var hReg = ss.getSheetByName('registros') || ss.insertSheet('registros');
-  if (hReg.getLastRow() === 0) hReg.appendRow(HEADERS_REGISTROS);
+  asegurarEncabezadoRegistros_(hReg);
+  asegurarColumnasTexto_(hReg);
 
   var hojaPorDefecto = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (hojaPorDefecto && ss.getSheets().length > 1) ss.deleteSheet(hojaPorDefecto);

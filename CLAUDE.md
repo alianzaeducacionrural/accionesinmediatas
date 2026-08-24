@@ -39,12 +39,16 @@ Google Sheets "Acciones inmediatas por departamento — Registro" (pestaña "reg
   instituciones/sedes: se escriben a mano en el formulario). Se regenera con
   `node tools/generar-catalogo.mjs` si cambia el catálogo de Caldas en
   `Plataformas/La Universidad en el Campo/*.csv`.
-- [js/formulario.js](js/formulario.js) — asistente de 4 pasos (reportante →
-  municipio → instituciones/sedes → revisión), repetidores con `<template>` +
-  clonado de nodos, selects con opción "No está en la lista" que revela un
-  campo de texto, chips de afectación, borrador en `localStorage`, "Mis
-  reportes guardados" (recuperar/editar lo ya enviado) y envío secuencial
-  sede por sede con reintento de las que fallen.
+- [js/formulario.js](js/formulario.js) — formulario de una sola página (sin
+  pasos ni navegación: reportante e instituciones/sedes están siempre
+  visibles, un único botón "Enviar registros" valida todo de una vez).
+  Repetidores con `<template>` + clonado de nodos, cada institución con su
+  propio selector de municipio (para poder mezclar varios municipios del
+  mismo departamento en un solo envío), selects con opción "No está en la
+  lista" que revela un campo de texto, chips de afectación y de acciones
+  sugeridas, borrador en `localStorage`, "Mis reportes guardados"
+  (recuperar/editar lo ya enviado) y envío secuencial sede por sede con
+  reintento de las que fallen.
 - [gas/Code.gs](gas/Code.gs) — backend. `inicializar()` crea el spreadsheet
   (una vez) dentro de la carpeta de Drive del proyecto y siembra la pestaña
   `registros`.
@@ -67,12 +71,22 @@ cambiarlo a `application/json`.**
 
 `id · Marca temporal · Actualizado · Reportante · Correo reportante ·
 Teléfono reportante · Departamento · Municipio · Vereda · Institución ·
-Sede · Rector · Número de estudiantes · Tipos de afectación (JSON) ·
-Descripción de afectaciones · Acciones inmediatas · Estado`
+Sede · Rector · Correo rector · Teléfono rector · Número de estudiantes ·
+Tipos de afectación (JSON) · Descripción de afectaciones · Acciones
+sugeridas (JSON) · Acciones inmediatas · Estado`
 
 `Estado` es `Borrador` (sede guardada sin rector/estudiantes/afectaciones/
-descripción/acciones) o `Completo`. La vereda se pide por sede, no por
-institución — una misma institución puede tener sedes en veredas distintas.
+descripción/acciones/acciones sugeridas) o `Completo`. La vereda se pide
+por sede, no por institución — una misma institución puede tener sedes en
+veredas distintas. Los teléfonos (`Teléfono reportante`, `Teléfono rector`)
+se guardan forzados a texto (`comoTexto_` en `gas/Code.gs`, prefijo de
+comilla simple) — sin eso Sheets los convierte a número y arriesga perder
+ceros a la izquierda.
+
+"Acciones sugeridas" son chips de selección múltiple (checklist de
+acciones típicas post-sismo: inmediatas, corto plazo, mediano plazo,
+definidas en `index.html` dentro de `#tpl-sede`); "Acciones inmediatas" es
+el campo de texto libre para el detalle adicional que no cubran los chips.
 
 ## Despliegue del backend — usa `clasp`, no copiar/pegar
 

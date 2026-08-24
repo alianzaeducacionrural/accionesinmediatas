@@ -35,32 +35,6 @@
 .header-titulo { font-size: 1.6rem; font-weight: 700; margin-bottom: 10px; }
 .header-sub { font-size: 0.94rem; opacity: 0.9; max-width: 480px; margin: 0 auto; line-height: 1.6; }
 
-/* ─── Progreso del asistente ──────────────────── */
-.progreso-pasos {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  margin-top: 24px; position: relative;
-}
-.progreso-paso {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 0.76rem; font-weight: 600; color: rgba(241,243,252,0.5);
-  transition: color var(--t);
-}
-.progreso-paso .num {
-  width: 24px; height: 24px; border-radius: 50%;
-  background: rgba(255,255,255,0.12); color: inherit;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.75rem; transition: background var(--t), color var(--t);
-}
-.progreso-paso.activo { color: #fff; }
-.progreso-paso.activo .num { background: var(--ambar-500); color: #26160A; }
-.progreso-paso.hecho { color: rgba(241,243,252,0.85); }
-.progreso-paso.hecho .num { background: rgba(255,255,255,0.22); }
-.progreso-linea { width: 22px; height: 1.5px; background: rgba(255,255,255,0.18); }
-.progreso-paso .etiqueta { display: none; }
-@media (min-width: 560px) {
-  .progreso-paso .etiqueta { display: inline; }
-}
-
 /* ─── Contenedor principal ──────────────────── */
 .contenedor { max-width: 680px; margin: -20px auto 0; padding: 0 16px 100px; position: relative; }
 
@@ -74,9 +48,6 @@
 .card-head h2 { font-size: 1.08rem; font-weight: 700; color: var(--tinta-900); }
 .card-head .card-head-sub { font-size: 0.82rem; color: var(--tinta-600); margin-top: 2px; }
 .card-body { padding: 22px; }
-
-/* ─── Paso (wizard) ───────────────────────────── */
-.paso { animation: entrada-bloque 0.32s var(--ease-out); }
 
 @keyframes entrada-bloque {
   from { opacity: 0; transform: translateY(-8px) scale(0.985); }
@@ -223,16 +194,6 @@ select.control:disabled {
 }
 .mis-reportes-item .nombre { font-weight: 600; }
 .mis-reportes-item .lugar { color: var(--tinta-600); font-size: 0.79rem; }
-
-/* ─── Revisión ────────────────────────────────── */
-.revision-item {
-  border: 1.5px solid var(--borde); border-radius: var(--radio-sm);
-  padding: 16px; margin-bottom: 12px; background: var(--papel);
-}
-.revision-item .titulo { font-weight: 700; color: var(--indigo-700); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-.revision-item dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; font-size: 0.86rem; }
-.revision-item dt { color: var(--tinta-600); font-weight: 500; }
-.revision-item dd { color: var(--tinta-900); }
 
 /* ─── Pantalla de resultado (envío) ───────────── */
 .pantalla-resultado { background: var(--superficie); border-radius: var(--radio); box-shadow: var(--sombra); padding: 40px 26px; text-align: center; animation: entrada-bloque 0.35s var(--ease-out); }
