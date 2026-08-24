@@ -121,6 +121,11 @@ select.control:disabled {
 .chip[data-sin-afectaciones].activo { border-color: var(--exito); background: var(--exito); box-shadow: 0 2px 8px rgba(47,122,79,0.28); }
 @keyframes chip-pop { 0% { transform: scale(0.9); } 55% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
+/* Texto libre revelado por un chip "Otra" (p. ej. Acciones inmediatas):
+   una franja pegada al grupo de chips, no un .campo suelto más. */
+.campo-accion-otra { margin-top: 10px; padding-left: 12px; border-left: 2px solid var(--indigo-200); }
+.campo-accion-otra .control { min-height: 72px; }
+
 /* ─── Botones ───────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
