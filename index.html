@@ -96,11 +96,9 @@
     <div class="progreso-pasos" id="progresoPasos">
       <div class="progreso-paso activo" data-paso="1"><span class="num">1</span><span class="etiqueta">Reportante</span></div>
       <div class="progreso-linea"></div>
-      <div class="progreso-paso" data-paso="2"><span class="num">2</span><span class="etiqueta">Municipio</span></div>
+      <div class="progreso-paso" data-paso="2"><span class="num">2</span><span class="etiqueta">Sedes</span></div>
       <div class="progreso-linea"></div>
-      <div class="progreso-paso" data-paso="3"><span class="num">3</span><span class="etiqueta">Sedes</span></div>
-      <div class="progreso-linea"></div>
-      <div class="progreso-paso" data-paso="4"><span class="num">4</span><span class="etiqueta">Revisión</span></div>
+      <div class="progreso-paso" data-paso="3"><span class="num">3</span><span class="etiqueta">Revisión</span></div>
     </div>
   </div>
 </header>
@@ -151,35 +149,14 @@
       </div>
     </section>
 
-    <!-- ═══ PASO 2 — Municipio ═══ -->
+    <!-- ═══ PASO 2 — Instituciones y sedes ═══ -->
     <section class="paso oculto" id="paso2" data-paso="2">
-      <div class="card">
-        <div class="card-head">
-          <div class="icono"><svg class="icono-svg"><use href="#icono-marcador"></use></svg></div>
-          <div>
-            <h2>Municipio</h2>
-            <div class="card-head-sub">Selecciona el municipio donde vas a reportar</div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="campo">
-            <label for="selectMunicipio">Municipio <span class="req">*</span></label>
-            <select class="control" id="selectMunicipio" required>
-              <option value="">— Primero selecciona el departamento —</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ PASO 3 — Instituciones y sedes ═══ -->
-    <section class="paso oculto" id="paso3" data-paso="3">
       <div class="card">
         <div class="card-head">
           <div class="icono"><svg class="icono-svg"><use href="#icono-edificio"></use></svg></div>
           <div>
             <h2>Instituciones y sedes</h2>
-            <div class="card-head-sub">Agrega una o más instituciones, y dentro de cada una sus sedes afectadas</div>
+            <div class="card-head-sub">Agrega una o más instituciones — cada una puede ser de un municipio distinto — y dentro de cada una sus sedes afectadas</div>
           </div>
         </div>
         <div class="card-body">
@@ -192,8 +169,8 @@
       </div>
     </section>
 
-    <!-- ═══ PASO 4 — Revisión y envío ═══ -->
-    <section class="paso oculto" id="paso4" data-paso="4">
+    <!-- ═══ PASO 3 — Revisión y envío ═══ -->
+    <section class="paso oculto" id="paso3" data-paso="3">
       <div class="card">
         <div class="card-head">
           <div class="icono"><svg class="icono-svg"><use href="#icono-portapapeles"></use></svg></div>
@@ -254,6 +231,13 @@
       </button>
     </div>
     <div class="institucion-body">
+      <div class="campo">
+        <label>Municipio <span class="req">*</span></label>
+        <select class="control select-municipio">
+          <option value="">— Selecciona un municipio —</option>
+        </select>
+      </div>
+
       <div class="campo campo-institucion-select">
         <label>Institución educativa <span class="req">*</span></label>
         <select class="control select-institucion"></select>

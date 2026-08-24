@@ -1,12 +1,14 @@
 // ================================================
 // FORMULARIO.JS — Acciones inmediatas por departamento
-// Asistente de 4 pasos, repetidores de institución/sede, cascada de
-// catálogo con opción "otra", borrador en localStorage, "Mis reportes
-// guardados" y envío secuencial sede por sede con reintento de fallidas.
+// Asistente de 3 pasos, repetidores de institución/sede (cada institución
+// elige su propio municipio, así se pueden mezclar varios municipios del
+// mismo departamento en un solo envío), cascada de catálogo con opción
+// "otra", borrador en localStorage, "Mis reportes guardados" y envío
+// secuencial sede por sede con reintento de fallidas.
 // ================================================
 
 const CLAVE_BORRADOR = 'aid_borrador_v1';
-const TOTAL_PASOS = 4;
+const TOTAL_PASOS = 3;
 const VALOR_OTRA = '__otra__';
 const COLLATOR_ES = new Intl.Collator('es', { sensitivity: 'base' });
 
@@ -15,7 +17,7 @@ let itemsEnvioPendientes = [];
 let temporizadorAutoguardadoTexto = null;
 
 let elReportanteNombre, elReportanteCorreo, elReportanteTelefono;
-let elSelectDepartamento, elSelectMunicipio;
+let elSelectDepartamento;
 let elListaInstituciones, elListaMisReportes, elBloqueMisReportes;
 
 document.addEventListener('DOMContentLoaded', iniciar);
@@ -25,7 +27,6 @@ function iniciar() {
   elReportanteCorreo = document.getElementById('reportanteCorreo');
   elReportanteTelefono = document.getElementById('reportanteTelefono');
   elSelectDepartamento = document.getElementById('selectDepartamento');
-  elSelectMunicipio = document.getElementById('selectMunicipio');
   elListaInstituciones = document.getElementById('listaInstituciones');
   elListaMisReportes = document.getElementById('listaMisReportes');
   elBloqueMisReportes = document.getElementById('bloqueMisReportes');
@@ -33,7 +34,7 @@ function iniciar() {
   poblarDepartamentos();
   configurarNavegacion();
   configurarPaso1();
-  configurarPaso3();
+  configurarPasoInstituciones();
 
   restaurarBorrador();
   cargarReportantesConocidos();
@@ -108,25 +109,27 @@ function configurarPaso1() {
   elReportanteTelefono.addEventListener('input', () => guardarBorrador());
 
   elSelectDepartamento.addEventListener('change', () => {
-    poblarMunicipios();
+    actualizarBloquesInstitucionExistentes();
     guardarBorrador();
     cargarMisReportes();
   });
-  elSelectMunicipio.addEventListener('change', () => guardarBorrador());
 }
 
-function poblarMunicipios() {
+// Rellena un <select> de municipios según el departamento activo. Se usa
+// por cada institución (no hay un municipio único para todo el envío: cada
+// institución puede ser de un municipio distinto del mismo departamento).
+function poblarMunicipiosEnSelect(selectEl, valorPrevio) {
   const depto = elSelectDepartamento.value;
-  const valorPrevio = elSelectMunicipio.value;
-  elSelectMunicipio.innerHTML = '<option value="">— Selecciona un municipio —</option>';
+  const anterior = valorPrevio !== undefined ? valorPrevio : selectEl.value;
+  selectEl.innerHTML = '<option value="">— Selecciona un municipio —</option>';
   if (!depto) return;
 
   const municipios = depto === 'Caldas'
     ? Object.keys(CATALOGO.Caldas).sort(COLLATOR_ES.compare)
     : (MUNICIPIOS_SIN_CATALOGO[depto] || []).slice();
 
-  municipios.forEach((m) => elSelectMunicipio.add(new Option(m, m)));
-  if (municipios.indexOf(valorPrevio) !== -1) elSelectMunicipio.value = valorPrevio;
+  municipios.forEach((m) => selectEl.add(new Option(m, m)));
+  if (municipios.indexOf(anterior) !== -1) selectEl.value = anterior;
 }
 
 async function cargarReportantesConocidos() {
@@ -172,12 +175,10 @@ async function cargarMisReportes() {
 
 function retomarRegistro(r) {
   elSelectDepartamento.value = r.departamento;
-  poblarMunicipios();
-  elSelectMunicipio.value = r.municipio;
   elListaInstituciones.innerHTML = '';
-  agregarInstitucion({ institucion: r.institucion, sedes: [r] });
+  agregarInstitucion({ municipio: r.municipio, institucion: r.institucion, sedes: [r] });
   guardarBorrador();
-  mostrarPaso(3);
+  mostrarPaso(2);
 }
 
 // ─── Navegación del asistente ────────────────────────────────
@@ -206,8 +207,8 @@ function mostrarPaso(n) {
 
 function irSiguiente() {
   if (!validarPaso(pasoActual)) return;
-  if (pasoActual === 2) prepararPaso3();
-  if (pasoActual === 3) renderRevision();
+  if (pasoActual === 1) prepararPasoInstituciones();
+  if (pasoActual === 2) renderRevision();
   if (pasoActual < TOTAL_PASOS) mostrarPaso(pasoActual + 1);
 }
 
@@ -229,11 +230,6 @@ function validarPaso(n) {
   }
 
   if (n === 2) {
-    if (!elSelectMunicipio.value) { marcarError(elSelectMunicipio); return false; }
-    return true;
-  }
-
-  if (n === 3) {
     const bloques = [...elListaInstituciones.querySelectorAll('.institucion-bloque')];
     if (bloques.length === 0) {
       alert('Agrega al menos una institución educativa.');
@@ -241,6 +237,8 @@ function validarPaso(n) {
     }
     let ok = true;
     bloques.forEach((bi) => {
+      const selectMunicipio = bi.querySelector('.select-municipio');
+      if (!selectMunicipio.value) { marcarError(selectMunicipio); ok = false; }
       if (!nombreInstitucion(bi)) { marcarError(institucionControlActivo(bi)); ok = false; }
       const sedes = [...bi.querySelectorAll('.sede-bloque')];
       if (sedes.length === 0) ok = false;
@@ -248,15 +246,15 @@ function validarPaso(n) {
         if (!nombreSede(bs)) { marcarError(sedeControlActivo(bs)); ok = false; }
       });
     });
-    if (!ok) alert('Revisa los campos marcados: falta el nombre de alguna institución o sede.');
+    if (!ok) alert('Revisa los campos marcados: falta el municipio, la institución o el nombre de alguna sede.');
     return ok;
   }
 
   return true;
 }
 
-function prepararPaso3() {
-  actualizarSelectsInstitucionExistentes();
+function prepararPasoInstituciones() {
+  actualizarBloquesInstitucionExistentes();
   if (elListaInstituciones.children.length === 0) agregarInstitucion();
 }
 
@@ -340,22 +338,23 @@ function previsualizarNombrePropio(inputEl) {
   }
 }
 
-// ─── Paso 3 — Instituciones y sedes ──────────────────────────
+// ─── Paso 2 — Instituciones y sedes ──────────────────────────
+// Cada tarjeta de institución elige su propio municipio: así se pueden
+// mezclar varios municipios del mismo departamento en un solo envío.
 
-function configurarPaso3() {
+function configurarPasoInstituciones() {
   document.getElementById('btnAgregarInstitucion').addEventListener('click', () => agregarInstitucion());
 }
 
-function opcionesInstitucionesActuales() {
+function opcionesInstitucionesActuales(municipio) {
   const depto = elSelectDepartamento.value;
-  const municipio = elSelectMunicipio.value;
   if (depto !== 'Caldas' || !municipio || !CATALOGO.Caldas[municipio]) return [];
   return Object.keys(CATALOGO.Caldas[municipio]).sort(COLLATOR_ES.compare);
 }
 
 function opcionesSedesActuales(institucionBloque) {
   const depto = elSelectDepartamento.value;
-  const municipio = elSelectMunicipio.value;
+  const municipio = institucionBloque.querySelector('.select-municipio').value;
   if (depto !== 'Caldas' || !municipio) return [];
   const nombreInst = nombreInstitucion(institucionBloque);
   const sedesDisponibles = (CATALOGO.Caldas[municipio] || {})[nombreInst];
@@ -392,7 +391,8 @@ function sedeControlActivo(bs) {
 
 function renumerarInstituciones() {
   [...elListaInstituciones.querySelectorAll('.institucion-bloque')].forEach((bi, i) => {
-    bi.querySelector('.numero-institucion').textContent = 'Institución ' + (i + 1);
+    const municipio = bi.querySelector('.select-municipio').value;
+    bi.querySelector('.numero-institucion').textContent = 'Institución ' + (i + 1) + (municipio ? ' — ' + municipio : '');
   });
 }
 
@@ -407,37 +407,59 @@ function actualizarSelectsSedeDe(institucionBloque) {
   agregarSede(institucionBloque);
 }
 
-function actualizarSelectsInstitucionExistentes() {
+// Refresca la cascada Municipio → Institución de cada tarjeta ya creada.
+// Se llama al cambiar el departamento (paso 1) o al entrar al paso de
+// instituciones, por si el departamento cambió después de crear tarjetas.
+function actualizarBloquesInstitucionExistentes() {
   [...elListaInstituciones.querySelectorAll('.institucion-bloque')].forEach((bi) => {
-    const selectInst = bi.querySelector('.select-institucion');
-    const inputOtra = bi.querySelector('.input-institucion-otra');
-    const campoSelect = bi.querySelector('.campo-institucion-select');
-    const campoOtra = bi.querySelector('.campo-institucion-otra');
-    const valorActual = nombreInstitucion(bi);
-
-    configurarSelectConOtra({
-      select: selectInst, input: inputOtra, campoSelect, campoOtra,
-      opciones: opcionesInstitucionesActuales(),
-      onCambio: () => actualizarSelectsSedeDe(bi),
-    });
-    if (valorActual) seleccionarValorConOtra(selectInst, inputOtra, campoSelect, campoOtra, valorActual);
+    const selectMunicipio = bi.querySelector('.select-municipio');
+    poblarMunicipiosEnSelect(selectMunicipio);
+    refrescarInstitucionDe(bi);
+    renumerarInstituciones();
   });
+}
+
+function refrescarInstitucionDe(institucionBloque) {
+  const selectInst = institucionBloque.querySelector('.select-institucion');
+  const inputOtra = institucionBloque.querySelector('.input-institucion-otra');
+  const campoSelect = institucionBloque.querySelector('.campo-institucion-select');
+  const campoOtra = institucionBloque.querySelector('.campo-institucion-otra');
+  const municipio = institucionBloque.querySelector('.select-municipio').value;
+  const valorActual = nombreInstitucion(institucionBloque);
+
+  configurarSelectConOtra({
+    select: selectInst, input: inputOtra, campoSelect, campoOtra,
+    opciones: opcionesInstitucionesActuales(municipio),
+    onCambio: () => actualizarSelectsSedeDe(institucionBloque),
+  });
+  if (valorActual) seleccionarValorConOtra(selectInst, inputOtra, campoSelect, campoOtra, valorActual);
 }
 
 function agregarInstitucion(datosPrevios) {
   const tpl = document.getElementById('tpl-institucion');
   const nodo = tpl.content.firstElementChild.cloneNode(true);
 
+  const selectMunicipio = nodo.querySelector('.select-municipio');
   const selectInst = nodo.querySelector('.select-institucion');
   const inputOtra = nodo.querySelector('.input-institucion-otra');
   const campoSelect = nodo.querySelector('.campo-institucion-select');
   const campoOtra = nodo.querySelector('.campo-institucion-otra');
 
+  poblarMunicipiosEnSelect(selectMunicipio);
+  if (datosPrevios && datosPrevios.municipio) selectMunicipio.value = datosPrevios.municipio;
+
   configurarSelectConOtra({
     select: selectInst, input: inputOtra, campoSelect, campoOtra,
-    opciones: opcionesInstitucionesActuales(),
+    opciones: opcionesInstitucionesActuales(selectMunicipio.value),
     onCambio: () => actualizarSelectsSedeDe(nodo),
   });
+
+  selectMunicipio.onchange = () => {
+    refrescarInstitucionDe(nodo);
+    actualizarSelectsSedeDe(nodo);
+    renumerarInstituciones();
+    guardarBorrador();
+  };
 
   nodo.querySelector('.btn-quitar-institucion').addEventListener('click', () => {
     nodo.remove();
@@ -565,6 +587,7 @@ function actualizarBadgeEstadoSede(sedeBloque) {
 
 function recopilarInstituciones() {
   return [...elListaInstituciones.querySelectorAll('.institucion-bloque')].map((bi) => ({
+    municipio: bi.querySelector('.select-municipio').value,
     institucion: nombreInstitucion(bi),
     sedes: [...bi.querySelectorAll('.sede-bloque')].map((bs) => recopilarSede(bs)),
   }));
@@ -592,7 +615,6 @@ function recopilarEstado() {
       telefono: elReportanteTelefono.value,
     },
     departamento: elSelectDepartamento.value,
-    municipio: elSelectMunicipio.value,
     instituciones: recopilarInstituciones(),
   };
 }
@@ -632,16 +654,12 @@ function restaurarBorrador() {
   elReportanteCorreo.value = (datos.reportante && datos.reportante.correo) || '';
   elReportanteTelefono.value = (datos.reportante && datos.reportante.telefono) || '';
 
-  if (datos.departamento) {
-    elSelectDepartamento.value = datos.departamento;
-    poblarMunicipios();
-    if (datos.municipio) elSelectMunicipio.value = datos.municipio;
-  }
+  if (datos.departamento) elSelectDepartamento.value = datos.departamento;
 
   (datos.instituciones || []).forEach((inst) => agregarInstitucion(inst));
 }
 
-// ─── Paso 4 — Revisión ────────────────────────────────────────
+// ─── Paso 3 — Revisión ────────────────────────────────────────
 
 function renderRevision() {
   const datos = recopilarInstituciones();
@@ -657,7 +675,7 @@ function renderRevision() {
       const div = document.createElement('div');
       div.className = 'revision-item';
       div.innerHTML = `
-        <div class="titulo">${iconoSvg('icono-marcador')} ${escaparHtml(inst.institucion)} — ${escaparHtml(sede.sede)}</div>
+        <div class="titulo">${iconoSvg('icono-marcador')} ${escaparHtml(inst.municipio)} — ${escaparHtml(inst.institucion)} — ${escaparHtml(sede.sede)}</div>
         <dl>
           <dt>Vereda</dt><dd>${escaparHtml(sede.vereda) || '—'}</dd>
           <dt>Rector</dt><dd>${escaparHtml(sede.rector) || '—'}</dd>
@@ -688,13 +706,12 @@ async function enviarTodo() {
     telefono: elReportanteTelefono.value.trim(),
   };
   const departamento = elSelectDepartamento.value;
-  const municipio = elSelectMunicipio.value;
   const instituciones = recopilarInstituciones();
 
   const items = [];
   instituciones.forEach((inst) => {
     inst.sedes.forEach((sede) => {
-      items.push({ institucion: inst.institucion, ...sede, estadoEnvio: 'pendiente', error: '' });
+      items.push({ municipio: inst.municipio, institucion: inst.institucion, ...sede, estadoEnvio: 'pendiente', error: '' });
     });
   });
   if (!items.length) return;
@@ -704,10 +721,10 @@ async function enviarTodo() {
   document.getElementById('indicadorAutoguardado').classList.add('oculto');
 
   itemsEnvioPendientes = items;
-  await procesarEnvio(reportante, departamento, municipio, items);
+  await procesarEnvio(reportante, departamento, items);
 }
 
-async function procesarEnvio(reportante, departamento, municipio, items) {
+async function procesarEnvio(reportante, departamento, items) {
   const listaEl = document.getElementById('listaProgresoEnvio');
   const barraEl = document.getElementById('barraGlobalRelleno');
   listaEl.innerHTML = '';
@@ -715,7 +732,7 @@ async function procesarEnvio(reportante, departamento, municipio, items) {
   const filas = items.map((item) => {
     const div = document.createElement('div');
     div.className = 'progreso-item';
-    div.innerHTML = `<span class="estado-icono">${iconoSvg('icono-circulo')}</span><span class="nombre">${escaparHtml(item.institucion)} — ${escaparHtml(item.sede)}</span>`;
+    div.innerHTML = `<span class="estado-icono">${iconoSvg('icono-circulo')}</span><span class="nombre">${escaparHtml(item.municipio)} — ${escaparHtml(item.institucion)} — ${escaparHtml(item.sede)}</span>`;
     listaEl.appendChild(div);
     return div;
   });
@@ -734,7 +751,7 @@ async function procesarEnvio(reportante, departamento, municipio, items) {
         accion: 'guardarRegistro',
         reportante,
         departamento,
-        municipio,
+        municipio: item.municipio,
         vereda: item.vereda,
         institucion: item.institucion,
         sede: item.sede,
@@ -763,10 +780,10 @@ async function procesarEnvio(reportante, departamento, municipio, items) {
     barraEl.style.transform = `scaleX(${(i + 1) / items.length})`;
   }
 
-  mostrarResultadoFinal(completados, items.length, hubErrores, reportante, departamento, municipio);
+  mostrarResultadoFinal(completados, items.length, hubErrores, reportante, departamento);
 }
 
-function mostrarResultadoFinal(completados, total, hubErrores, reportante, departamento, municipio) {
+function mostrarResultadoFinal(completados, total, hubErrores, reportante, departamento) {
   const iconoEl = document.getElementById('iconoResultado');
   const tituloEl = document.getElementById('tituloResultado');
   const detalleEl = document.getElementById('detalleResultado');
@@ -796,7 +813,7 @@ function mostrarResultadoFinal(completados, total, hubErrores, reportante, depar
     btn.textContent = 'Reintentar las que fallaron';
     btn.addEventListener('click', async () => {
       const pendientes = itemsEnvioPendientes.filter((it) => it.estadoEnvio !== 'ok');
-      await procesarEnvio(reportante, departamento, municipio, pendientes);
+      await procesarEnvio(reportante, departamento, pendientes);
     });
     accionesEl.appendChild(btn);
   }
