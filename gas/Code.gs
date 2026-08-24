@@ -22,7 +22,7 @@
 // ID del spreadsheet de resultados. Vacío la primera vez: inicializar() lo
 // crea dentro de CARPETA_DRIVE_ID y muestra el ID en el Logger para que lo
 // pegues aquí.
-var RESULTS_SHEET_ID = '';
+var RESULTS_SHEET_ID = '1F_FVzOhYuZlnTEkWzsYqmED1tJAi8xz2JrrFCpjV9vY';
 
 // Carpeta de Drive donde debe quedar el spreadsheet y cualquier archivo
 // asociado a esta plataforma — indicada por el usuario.
