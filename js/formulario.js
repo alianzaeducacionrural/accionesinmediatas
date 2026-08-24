@@ -33,6 +33,7 @@ function iniciar() {
   configurarNavegacion();
   configurarReportante();
   configurarInstituciones();
+  configurarAporteDepartamento();
 
   restaurarBorrador();
   if (elListaInstituciones.children.length === 0) agregarInstitucion();
@@ -179,6 +180,11 @@ function retomarRegistro(r) {
     municipio: r.municipio, institucion: r.institucion,
     rector: r.rector, telefonoRector: r.telefonoRector, correoRector: r.correoRector,
     sedes: [r],
+  });
+  document.querySelectorAll('.chip-aporte-departamento.activo').forEach((c) => c.classList.remove('activo'));
+  (r.aporteDepartamento || []).forEach((valor) => {
+    const chip = document.querySelector(`.chip-aporte-departamento[data-valor="${cssEscape(valor)}"]`);
+    if (chip) chip.classList.add('activo');
   });
   guardarBorrador();
   const destino = document.getElementById('listaInstituciones');
@@ -492,9 +498,7 @@ function agregarSede(institucionBloque, datosPrevios) {
   configurarChipsAcciones(nodo);
 
   nodo.querySelector('.input-vereda').addEventListener('input', (e) => { previsualizarNombrePropio(e.target); guardarBorrador(); });
-  ['.textarea-descripcion', '.textarea-recursos-externos', '.textarea-aporte-departamento'].forEach((sel) => {
-    nodo.querySelector(sel).addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(nodo); });
-  });
+  nodo.querySelector('.textarea-descripcion').addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(nodo); });
 
   institucionBloque.querySelector('.sedes-lista').appendChild(nodo);
   renumerarSedesDe(institucionBloque);
@@ -504,15 +508,23 @@ function agregarSede(institucionBloque, datosPrevios) {
     nodo.querySelector('.input-vereda').value = datosPrevios.vereda || '';
     nodo.querySelector('.input-estudiantes').value = datosPrevios.numeroEstudiantes || '';
     nodo.querySelector('.textarea-descripcion').value = datosPrevios.descripcionAfectaciones || '';
-    nodo.querySelector('.textarea-recursos-externos').value = datosPrevios.necesidadRecursosExternos || '';
-    nodo.querySelector('.textarea-aporte-departamento').value = datosPrevios.aporteDepartamento || '';
     (datosPrevios.afectaciones || []).forEach((a) => {
       const chip = nodo.querySelector(`.chips-afectacion .chip[data-valor="${cssEscape(a)}"]`);
       if (chip) chip.classList.add('activo');
     });
     (datosPrevios.accionesSugeridas || []).forEach((a) => {
       const chip = nodo.querySelector(`.chip-accion[data-valor="${cssEscape(a)}"]`);
-      if (chip) chip.classList.add('activo');
+      if (chip) {
+        chip.classList.add('activo');
+      } else {
+        // No coincide con ninguna acción predefinida: es texto libre del chip "Otra".
+        const chipOtra = nodo.querySelector('.chip-accion[data-chip-otra]');
+        const campoOtra = nodo.querySelector('.campo-accion-otra');
+        const inputOtra = nodo.querySelector('.textarea-accion-otra');
+        if (chipOtra) chipOtra.classList.add('activo');
+        if (campoOtra) campoOtra.classList.remove('oculto');
+        if (inputOtra) inputOtra.value = a;
+      }
     });
     actualizarBadgeEstadoSede(nodo);
   }
@@ -555,17 +567,43 @@ function configurarChipsAfectacion(sedeBloque) {
   });
 }
 
-// Chips de "Acciones inmediatas / a corto plazo / a mediano plazo" — a
-// diferencia de las de afectación, son selección múltiple simple, sin
-// opción excluyente ni agrupación especial entre ellas.
+// Chips de "Acciones inmediatas" — selección múltiple simple, sin opción
+// excluyente. El chip "Otra" revela un textarea de texto libre en vez de
+// aportar su data-valor literal.
 function configurarChipsAcciones(sedeBloque) {
+  const campoOtra = sedeBloque.querySelector('.campo-accion-otra');
+  const inputOtra = sedeBloque.querySelector('.textarea-accion-otra');
+
   sedeBloque.querySelectorAll('.chip-accion').forEach((chip) => {
     chip.addEventListener('click', () => {
       chip.classList.toggle('activo');
+      if (chip.hasAttribute('data-chip-otra') && campoOtra) {
+        const activo = chip.classList.contains('activo');
+        campoOtra.classList.toggle('oculto', !activo);
+        if (activo) inputOtra.focus();
+      }
       guardarBorrador();
       actualizarBadgeEstadoSede(sedeBloque);
     });
   });
+
+  if (inputOtra) {
+    inputOtra.addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(sedeBloque); });
+  }
+}
+
+// Valores finales de "Acciones inmediatas": el chip "Otra" activo aporta el
+// texto libre en vez de su data-valor literal; se descarta si quedó vacío.
+function accionesSugeridasDe(sedeBloque) {
+  return [...sedeBloque.querySelectorAll('.chip-accion.activo')]
+    .map((chip) => {
+      if (chip.hasAttribute('data-chip-otra')) {
+        const inputOtra = sedeBloque.querySelector('.textarea-accion-otra');
+        return inputOtra ? inputOtra.value.trim() : '';
+      }
+      return chip.dataset.valor;
+    })
+    .filter((v) => v);
 }
 
 function actualizarBadgeEstadoSede(sedeBloque) {
@@ -575,9 +613,7 @@ function actualizarBadgeEstadoSede(sedeBloque) {
   const afectaciones = sedeBloque.querySelectorAll('.chips-afectacion .chip.activo').length;
   const accionesSugeridas = sedeBloque.querySelectorAll('.chip-accion.activo').length;
   const descripcion = sedeBloque.querySelector('.textarea-descripcion').value.trim();
-  const recursosExternos = sedeBloque.querySelector('.textarea-recursos-externos').value.trim();
-  const aporteDepartamento = sedeBloque.querySelector('.textarea-aporte-departamento').value.trim();
-  const completo = !!(estudiantes !== '' || afectaciones || accionesSugeridas || descripcion || recursosExternos || aporteDepartamento);
+  const completo = !!(estudiantes !== '' || afectaciones || accionesSugeridas || descripcion);
   badge.textContent = completo ? 'Completo' : 'Borrador';
   badge.classList.toggle('completo', completo);
   badge.classList.toggle('borrador', !completo);
@@ -603,10 +639,23 @@ function recopilarSede(bs) {
     numeroEstudiantes: bs.querySelector('.input-estudiantes').value,
     afectaciones: [...bs.querySelectorAll('.chips-afectacion .chip.activo')].map((c) => c.dataset.valor),
     descripcionAfectaciones: bs.querySelector('.textarea-descripcion').value.trim(),
-    accionesSugeridas: [...bs.querySelectorAll('.chip-accion.activo')].map((c) => c.dataset.valor),
-    necesidadRecursosExternos: bs.querySelector('.textarea-recursos-externos').value.trim(),
-    aporteDepartamento: bs.querySelector('.textarea-aporte-departamento').value.trim(),
+    accionesSugeridas: accionesSugeridasDe(bs),
   };
+}
+
+// ─── Aporte del departamento (única vez para todo el envío) ──
+
+function configurarAporteDepartamento() {
+  document.querySelectorAll('.chip-aporte-departamento').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('activo');
+      guardarBorrador();
+    });
+  });
+}
+
+function recopilarAporteDepartamento() {
+  return [...document.querySelectorAll('.chip-aporte-departamento.activo')].map((c) => c.dataset.valor);
 }
 
 // ─── Borrador en localStorage ────────────────────────────────
@@ -620,6 +669,7 @@ function recopilarEstado() {
     },
     departamento: elSelectDepartamento.value,
     instituciones: recopilarInstituciones(),
+    aporteDepartamento: recopilarAporteDepartamento(),
   };
 }
 
@@ -661,6 +711,11 @@ function restaurarBorrador() {
   if (datos.departamento) elSelectDepartamento.value = datos.departamento;
 
   (datos.instituciones || []).forEach((inst) => agregarInstitucion(inst));
+
+  (datos.aporteDepartamento || []).forEach((valor) => {
+    const chip = document.querySelector(`.chip-aporte-departamento[data-valor="${cssEscape(valor)}"]`);
+    if (chip) chip.classList.add('activo');
+  });
 }
 
 // ─── Envío secuencial ─────────────────────────────────────────
@@ -675,6 +730,7 @@ async function enviarTodo() {
   };
   const departamento = elSelectDepartamento.value;
   const instituciones = recopilarInstituciones();
+  const aporteDepartamento = recopilarAporteDepartamento();
 
   const items = [];
   instituciones.forEach((inst) => {
@@ -682,7 +738,7 @@ async function enviarTodo() {
       items.push({
         municipio: inst.municipio, institucion: inst.institucion,
         rector: inst.rector, telefonoRector: inst.telefonoRector, correoRector: inst.correoRector,
-        ...sede, estadoEnvio: 'pendiente', error: '',
+        ...sede, aporteDepartamento, estadoEnvio: 'pendiente', error: '',
       });
     });
   });
@@ -734,7 +790,6 @@ async function procesarEnvio(reportante, departamento, items) {
         afectaciones: item.afectaciones,
         descripcionAfectaciones: item.descripcionAfectaciones,
         accionesSugeridas: item.accionesSugeridas,
-        necesidadRecursosExternos: item.necesidadRecursosExternos,
         aporteDepartamento: item.aporteDepartamento,
       });
       item.estadoEnvio = 'ok';

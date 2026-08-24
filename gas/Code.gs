@@ -35,8 +35,7 @@ var HEADERS_REGISTROS = [
   'Departamento', 'Municipio', 'Vereda', 'Institución', 'Sede', 'Rector',
   'Correo rector', 'Teléfono rector',
   'Número de estudiantes', 'Tipos de afectación', 'Descripción de afectaciones',
-  'Acciones sugeridas', 'Necesidad de recursos externos',
-  'Aporte del departamento', 'Estado',
+  'Acciones sugeridas', 'Aporte del departamento', 'Estado',
 ];
 
 // Índices 1-based de columnas.
@@ -45,7 +44,7 @@ var COL = {
   DEPARTAMENTO: 7, MUNICIPIO: 8, VEREDA: 9, INSTITUCION: 10, SEDE: 11,
   RECTOR: 12, CORREO_RECTOR: 13, TELEFONO_RECTOR: 14,
   ESTUDIANTES: 15, AFECTACIONES: 16, DESCRIPCION: 17,
-  ACCIONES_SUGERIDAS: 18, RECURSOS_EXTERNOS: 19, APORTE_DEPARTAMENTO: 20, ESTADO: 21,
+  ACCIONES_SUGERIDAS: 18, APORTE_DEPARTAMENTO: 19, ESTADO: 20,
 };
 
 var DEPARTAMENTOS_VALIDOS = ['Caldas', 'Risaralda', 'Quindío', 'Valle del Cauca'];
@@ -192,6 +191,8 @@ function filaAObjeto_(f) {
   try { afectaciones = JSON.parse(f[COL.AFECTACIONES - 1] || '[]'); } catch (e) { afectaciones = []; }
   var accionesSugeridas = [];
   try { accionesSugeridas = JSON.parse(f[COL.ACCIONES_SUGERIDAS - 1] || '[]'); } catch (e) { accionesSugeridas = []; }
+  var aporteDepartamento = [];
+  try { aporteDepartamento = JSON.parse(f[COL.APORTE_DEPARTAMENTO - 1] || '[]'); } catch (e) { aporteDepartamento = []; }
   return {
     id: f[COL.ID - 1],
     marcaTemporal: f[1],
@@ -211,8 +212,7 @@ function filaAObjeto_(f) {
     afectaciones: afectaciones,
     descripcionAfectaciones: f[COL.DESCRIPCION - 1],
     accionesSugeridas: accionesSugeridas,
-    necesidadRecursosExternos: f[COL.RECURSOS_EXTERNOS - 1],
-    aporteDepartamento: f[COL.APORTE_DEPARTAMENTO - 1],
+    aporteDepartamento: aporteDepartamento,
     estado: f[COL.ESTADO - 1],
   };
 }
@@ -264,8 +264,7 @@ function guardarRegistro_(datos) {
   var afectaciones = Array.isArray(datos.afectaciones) ? datos.afectaciones : [];
   var descripcionAfectaciones = String(datos.descripcionAfectaciones || '').trim();
   var accionesSugeridas = Array.isArray(datos.accionesSugeridas) ? datos.accionesSugeridas : [];
-  var necesidadRecursosExternos = String(datos.necesidadRecursosExternos || '').trim();
-  var aporteDepartamento = String(datos.aporteDepartamento || '').trim();
+  var aporteDepartamento = Array.isArray(datos.aporteDepartamento) ? datos.aporteDepartamento : [];
 
   if (!reportante) throw new Error('Falta el nombre del reportante.');
   if (DEPARTAMENTOS_VALIDOS.indexOf(departamento) === -1) throw new Error('Departamento no válido: ' + departamento);
@@ -286,7 +285,7 @@ function guardarRegistro_(datos) {
       throw new Error('La sede "' + sede + '" ya fue registrada por ' + existente.valores[COL.REPORTANTE - 1] + '.');
     }
 
-    var tieneContenido = !!(rector || correoRector || telefonoRector || numeroEstudiantes !== '' || afectaciones.length || descripcionAfectaciones || accionesSugeridas.length || necesidadRecursosExternos || aporteDepartamento);
+    var tieneContenido = !!(rector || correoRector || telefonoRector || numeroEstudiantes !== '' || afectaciones.length || descripcionAfectaciones || accionesSugeridas.length || aporteDepartamento.length);
     var estado = tieneContenido ? 'Completo' : 'Borrador';
     var ahora = new Date();
 
@@ -298,7 +297,7 @@ function guardarRegistro_(datos) {
       departamento, municipio, vereda, institucion, sede, rector,
       correoRector, comoTexto_(telefonoRector),
       numeroEstudiantes, JSON.stringify(afectaciones), descripcionAfectaciones,
-      JSON.stringify(accionesSugeridas), necesidadRecursosExternos, aporteDepartamento, estado,
+      JSON.stringify(accionesSugeridas), JSON.stringify(aporteDepartamento), estado,
     ];
 
     if (existente) {

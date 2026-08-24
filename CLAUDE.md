@@ -77,29 +77,32 @@ cambiarlo a `application/json`.**
 Teléfono reportante · Departamento · Municipio · Vereda · Institución ·
 Sede · Rector · Correo rector · Teléfono rector · Número de estudiantes ·
 Tipos de afectación (JSON) · Descripción de afectaciones · Acciones
-sugeridas (JSON) · Necesidad de recursos externos · Aporte del
-departamento · Estado`
+sugeridas (JSON) · Aporte del departamento (JSON) · Estado`
 
 `Rector`/`Correo rector`/`Teléfono rector` se capturan una sola vez por
 institución en el formulario, pero se guardan repetidos en cada fila de
 sede — el Sheet sigue siendo una fila por sede (no hay una pestaña aparte
 de instituciones); ver `enviarTodo()` en `js/formulario.js`, que copia el
-rector de la institución a cada `item` antes de enviarlo.
+rector de la institución a cada `item` antes de enviarlo. `Aporte del
+departamento` sigue el mismo patrón pero a nivel de **todo el envío**: es
+un único grupo de chips al final del formulario (`Especie`/`Capacidad`/
+`Recurso económico`, clase `.chip-aporte-departamento` en `index.html`),
+fuera de `#listaInstituciones` — `enviarTodo()` lo calcula una vez
+(`recopilarAporteDepartamento()`) y lo copia igual a cada `item`.
 
 `Estado` es `Borrador` (sede guardada sin rector/estudiantes/afectaciones/
-descripción/acciones sugeridas/recursos/aporte) o `Completo`. La vereda se
-pide por sede, no por institución — una misma institución puede tener
-sedes en veredas distintas. Los teléfonos (`Teléfono reportante`,
-`Teléfono rector`) se guardan forzados a texto (`comoTexto_` en
-`gas/Code.gs`, prefijo de comilla simple) — sin eso Sheets los convierte a
-número y arriesga perder ceros a la izquierda.
+descripción/acciones sugeridas) o `Completo`. La vereda se pide por sede,
+no por institución — una misma institución puede tener sedes en veredas
+distintas. Los teléfonos (`Teléfono reportante`, `Teléfono rector`) se
+guardan forzados a texto (`comoTexto_` en `gas/Code.gs`, prefijo de
+comilla simple) — sin eso Sheets los convierte a número y arriesga perder
+ceros a la izquierda.
 
 "Acciones sugeridas" son chips de selección múltiple (checklist de
-acciones típicas post-sismo: inmediatas, corto plazo, mediano plazo,
-definidas en `index.html` dentro de `#tpl-sede`). "Necesidad de recursos
-externos" y "Aporte del departamento (Comité de Cafeteros u otros
-aliados)" son los dos campos de texto libre por sede — reemplazaron al
-antiguo "Acciones inmediatas" de texto libre.
+acciones inmediatas típicas post-sismo, definidas en `index.html` dentro
+de `#tpl-sede`) con un chip "Otra" que revela un textarea de texto libre
+(`accionesSugeridasDe()` en `js/formulario.js` sustituye el data-valor
+literal "Otra" por lo escrito).
 
 ## Despliegue del backend — usa `clasp`, no copiar/pegar
 

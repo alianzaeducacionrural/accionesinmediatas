@@ -148,6 +148,26 @@
       </div>
     </section>
 
+    <!-- ═══ Aporte del departamento (única vez, para todo el envío) ═══ -->
+    <section class="card">
+      <div class="card-head">
+        <div class="icono"><svg class="icono-svg"><use href="#icono-bandera"></use></svg></div>
+        <div>
+          <h2>APORTE DEL DEPARTAMENTO (COMITÉ DE CAFETEROS Y OTROS ALIADOS)</h2>
+          <div class="card-head-sub">Aplica a todo el envío, no por sede</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="campo">
+          <div class="chips">
+            <button type="button" class="chip chip-aporte-departamento" data-valor="Especie">Especie</button>
+            <button type="button" class="chip chip-aporte-departamento" data-valor="Capacidad">Capacidad</button>
+            <button type="button" class="chip chip-aporte-departamento" data-valor="Recurso económico">Recurso económico</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="autoguardado oculto" id="indicadorAutoguardado">
       <svg class="icono-svg"><use href="#icono-guardado"></use></svg>
       <span id="textoAutoguardado">Guardado en este dispositivo</span>
@@ -296,31 +316,11 @@
           <button type="button" class="chip chip-accion" data-valor="Ruta de apoyo psicosocial y socioemocional para niños, docentes y familias">Ruta de apoyo psicosocial y socioemocional (niños, docentes y familias)</button>
           <button type="button" class="chip chip-accion" data-valor="Campamentos, carpas o aulas temporales con baterías sanitarias temporales">Campamentos, carpas o aulas temporales con baterías sanitarias</button>
           <button type="button" class="chip chip-accion" data-valor="Reposición de mobiliario, guías y dotación de restaurante u otros elementos afectados">Reposición de mobiliario, guías y dotación de restaurante</button>
+          <button type="button" class="chip chip-accion" data-valor="Otra" data-chip-otra>Otra</button>
         </div>
-      </div>
-
-      <div class="campo">
-        <label>Acciones a corto plazo</label>
-        <div class="chips chips-acciones-grupo">
-          <button type="button" class="chip chip-accion" data-valor="Valorar e intervenir las sedes con afectaciones graves o moderadas">Valorar e intervenir sedes con afectaciones graves o moderadas</button>
+        <div class="campo campo-accion-otra oculto">
+          <textarea class="control textarea-accion-otra" placeholder="Describe la otra acción inmediata…"></textarea>
         </div>
-      </div>
-
-      <div class="campo">
-        <label>Acciones a mediano plazo</label>
-        <div class="chips chips-acciones-grupo">
-          <button type="button" class="chip chip-accion" data-valor="Construir las sedes que sufrieron colapso total o parcial">Construir sedes con colapso total o parcial</button>
-        </div>
-      </div>
-
-      <div class="campo">
-        <label>Necesidad de recursos externos</label>
-        <textarea class="control textarea-recursos-externos" placeholder="¿Qué recursos externos se necesitan para esta sede?"></textarea>
-      </div>
-
-      <div class="campo">
-        <label>Aporte del departamento (Comité de Cafeteros u otros aliados)</label>
-        <textarea class="control textarea-aporte-departamento" placeholder="¿Qué puede aportar el departamento u otros aliados?"></textarea>
       </div>
     </div>
   </div>
