@@ -57,6 +57,7 @@ function doGet(e) {
     if (accion === 'reportantes') return jsonResponse(reportantes_());
     if (accion === 'misRegistros') return jsonResponse(misRegistros_((e.parameter && e.parameter.reportante) || ''));
     if (accion === 'todosLosRegistros') return jsonResponse(todosLosRegistros_((e.parameter && e.parameter.departamento) || ''));
+    if (accion === 'rectoresConocidos') return jsonResponse(rectoresConocidos_());
     return errorResponse('Acción no reconocida: ' + accion);
   } catch (err) {
     return errorResponse(err.message);
@@ -206,6 +207,42 @@ function todosLosRegistros_(departamento) {
     resultado = resultado.filter(function (r) { return r.departamento === departamento; });
   }
   return resultado;
+}
+
+// ─── GET ?accion=rectoresConocidos ──────────────────────────
+// Último rector guardado (nombre/correo/teléfono) por cada institución que
+// ya tenga filas en "registros" — para autocompletar el rector en el
+// formulario cuando se escribe una institución ya diligenciada antes por
+// cualquier reportante. Clave por Departamento|Municipio|Institución (sin
+// sede): el rector es un dato de la institución, no de una sede puntual.
+
+function rectoresConocidos_() {
+  var sheet = getSheet_('registros');
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var filas = sheet.getRange(2, 1, lastRow - 1, HEADERS_REGISTROS.length).getValues();
+  var porClave = {};
+  filas.forEach(function (f) {
+    var rector = String(f[COL.RECTOR - 1] || '').trim();
+    if (!rector) return;
+    var departamento = String(f[COL.DEPARTAMENTO - 1] || '').trim();
+    var municipio = String(f[COL.MUNICIPIO - 1] || '').trim();
+    var institucion = String(f[COL.INSTITUCION - 1] || '').trim();
+    if (!departamento || !municipio || !institucion) return;
+    var clave = claveInstitucion_(departamento, municipio, institucion);
+    porClave[clave] = {
+      departamento: departamento, municipio: municipio, institucion: institucion,
+      rector: rector,
+      correoRector: String(f[COL.CORREO_RECTOR - 1] || '').trim(),
+      telefonoRector: String(f[COL.TELEFONO_RECTOR - 1] || '').trim(),
+    };
+  });
+  return Object.keys(porClave).map(function (k) { return porClave[k]; });
+}
+
+function claveInstitucion_(departamento, municipio, institucion) {
+  return [departamento, municipio, institucion].map(normalizarClave_).join('|');
 }
 
 function filaAObjeto_(f) {

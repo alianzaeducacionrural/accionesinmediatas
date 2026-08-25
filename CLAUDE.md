@@ -53,7 +53,12 @@ Google Sheets "Acciones inmediatas por departamento — Registro" (pestaña "reg
   y envío secuencial sede por sede con reintento de las que fallen. Al
   enviar, cada sede hereda el rector de su institución (`enviarTodo`) — la
   fila del Sheet sigue siendo una por sede, el rector solo se captura una
-  vez en el formulario.
+  vez en el formulario. Al escribir una institución (departamento +
+  municipio + nombre) que ya tenga rector guardado de un envío anterior de
+  cualquier reportante, `intentarAutocompletarRector()` lo completa
+  automáticamente — solo si los 3 campos de rector están vacíos, para no
+  pisar lo ya escrito; los datos vienen de `accion=rectoresConocidos`,
+  cargados una vez al iniciar (`cargarRectoresConocidos()`).
 - [gas/Code.gs](gas/Code.gs) — backend. `inicializar()` crea el spreadsheet
   (una vez) dentro de la carpeta de Drive del proyecto y siembra la pestaña
   `registros`. `normalizarCamposRegistro_()` centraliza la normalización y
@@ -88,6 +93,7 @@ de proyectos GAS del usuario):
 | GET | `reportantes` | nombre/correo/teléfono/departamento más recientes por reportante — autocompletar |
 | GET | `misRegistros&reportante=Nombre` | sedes ya guardadas (Borrador o Completo) por ese reportante |
 | GET | `todosLosRegistros[&departamento=]` | todas las filas, o solo las de un departamento — lo consume `dashboard.html` |
+| GET | `rectoresConocidos` | último rector (nombre/correo/teléfono) por institución ya diligenciada — autocompletar |
 | POST | `guardarRegistro` | upsert por clave natural `Departamento\|Municipio\|Institución\|Sede` |
 | POST | `editarRegistro` | actualiza por `id`, sin restricción de reportante (panel sin sesión) |
 | POST | `eliminarRegistro` | borra por `id`, sin restricción de reportante |

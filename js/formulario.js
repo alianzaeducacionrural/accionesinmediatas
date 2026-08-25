@@ -13,6 +13,7 @@ const COLLATOR_ES = new Intl.Collator('es', { sensitivity: 'base' });
 
 let itemsEnvioPendientes = [];
 let temporizadorAutoguardadoTexto = null;
+let rectoresConocidos = {};
 
 let elReportanteNombre, elReportanteCorreo, elReportanteTelefono;
 let elSelectDepartamento;
@@ -38,6 +39,7 @@ function iniciar() {
   restaurarBorrador();
   if (elListaInstituciones.children.length === 0) agregarInstitucion();
   cargarReportantesConocidos();
+  cargarRectoresConocidos();
 }
 
 // ─── Utilidades ──────────────────────────────────────────────
@@ -142,6 +144,52 @@ async function cargarReportantesConocidos() {
   } catch (err) {
     // El autocompletado es una mejora, no bloquea el formulario si falla.
   }
+}
+
+// Último rector guardado por institución (cualquier reportante, cualquier
+// envío anterior) — para autocompletar el rector cuando se escribe una
+// institución ya diligenciada. Clave por Departamento|Municipio|Institución,
+// igual que rectoresConocidos_() en gas/Code.gs.
+function claveInstitucionJs(departamento, municipio, institucion) {
+  return [departamento, municipio, institucion].map((s) => String(s || '').trim().toLowerCase()).join('|');
+}
+
+async function cargarRectoresConocidos() {
+  if (!CONFIG.GAS_URL) return;
+  try {
+    const lista = await getGAS({ accion: 'rectoresConocidos' });
+    rectoresConocidos = {};
+    lista.forEach((r) => {
+      rectoresConocidos[claveInstitucionJs(r.departamento, r.municipio, r.institucion)] = r;
+    });
+  } catch (err) {
+    // El autocompletado es una mejora, no bloquea el formulario si falla.
+  }
+}
+
+// Si la institución (departamento + municipio + nombre) ya tiene rector
+// conocido de un envío anterior, lo completa — pero solo si los 3 campos de
+// rector están vacíos, para no pisar lo que el usuario ya escribió o lo que
+// se restauró de un borrador/registro propio.
+function intentarAutocompletarRector(institucionBloque) {
+  const departamento = elSelectDepartamento.value;
+  const municipio = institucionBloque.querySelector('.select-municipio').value;
+  const institucion = nombreInstitucion(institucionBloque);
+  if (!departamento || !municipio || !institucion) return;
+
+  const datos = rectoresConocidos[claveInstitucionJs(departamento, municipio, institucion)];
+  if (!datos) return;
+
+  const inputRector = institucionBloque.querySelector('.input-rector');
+  const inputTelefono = institucionBloque.querySelector('.input-rector-telefono');
+  const inputCorreo = institucionBloque.querySelector('.input-rector-correo');
+  if (inputRector.value.trim() || inputTelefono.value.trim() || inputCorreo.value.trim()) return;
+
+  inputRector.value = datos.rector || '';
+  inputTelefono.value = datos.telefonoRector || '';
+  inputCorreo.value = datos.correoRector || '';
+  previsualizarNombrePropio(inputRector);
+  guardarBorrador();
 }
 
 async function cargarMisReportes() {
@@ -407,7 +455,7 @@ function refrescarInstitucionDe(institucionBloque) {
   configurarSelectConOtra({
     select: selectInst, input: inputOtra, campoSelect, campoOtra,
     opciones: opcionesInstitucionesActuales(municipio),
-    onCambio: () => actualizarSelectsSedeDe(institucionBloque),
+    onCambio: () => { actualizarSelectsSedeDe(institucionBloque); intentarAutocompletarRector(institucionBloque); },
   });
   if (valorActual) seleccionarValorConOtra(selectInst, inputOtra, campoSelect, campoOtra, valorActual);
 }
@@ -428,12 +476,13 @@ function agregarInstitucion(datosPrevios) {
   configurarSelectConOtra({
     select: selectInst, input: inputOtra, campoSelect, campoOtra,
     opciones: opcionesInstitucionesActuales(selectMunicipio.value),
-    onCambio: () => actualizarSelectsSedeDe(nodo),
+    onCambio: () => { actualizarSelectsSedeDe(nodo); intentarAutocompletarRector(nodo); },
   });
 
   selectMunicipio.onchange = () => {
     refrescarInstitucionDe(nodo);
     actualizarSelectsSedeDe(nodo);
+    intentarAutocompletarRector(nodo);
     renumerarInstituciones();
     guardarBorrador();
   };
