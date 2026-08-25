@@ -89,13 +89,6 @@ async function getGAS(params) {
   return json.data;
 }
 
-function formatearFecha(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
 // ─── Pestañas por departamento ───────────────────────────────
 
 function poblarPestanas() {
@@ -533,7 +526,6 @@ function detalleSoloLecturaHtml(r) {
   return `
     <div class="detalle-titulo">${escaparHtml(r.institucion)}</div>
     <div class="detalle-sub">${escaparHtml(r.sede)} · ${escaparHtml(r.municipio)}, ${escaparHtml(r.departamento)}</div>
-    <div class="detalle-actualizado">Actualizado ${formatearFecha(r.actualizado)}</div>
 
     <div class="detalle-bloque">
       <h3>Reportante</h3>

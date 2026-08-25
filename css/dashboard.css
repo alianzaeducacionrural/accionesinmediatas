@@ -79,9 +79,8 @@
 /* ─── Filtros ───────────────────────────────────────────────── */
 
 .panel-filtros {
-  position: sticky; top: 148px; z-index: 15;
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-  padding: 10px 0 14px; background: var(--papel);
+  padding: 10px 0 14px;
 }
 
 .campo-busqueda {
@@ -278,9 +277,7 @@
 .panel-detalle-cerrar .icono-svg { width: 16px; height: 16px; }
 
 .detalle-titulo { font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 700; color: var(--tinta-900); padding-right: 34px; }
-.detalle-sub { font-size: 0.88rem; color: var(--tinta-600); margin-top: 4px; }
-.detalle-actualizado { font-size: 0.76rem; color: var(--tinta-400); margin-top: 6px; }
-.detalle-placas { display: flex; gap: 8px; margin: 12px 0 18px; flex-wrap: wrap; }
+.detalle-sub { font-size: 0.88rem; color: var(--tinta-600); margin: 4px 0 22px; }
 
 .detalle-bloque { margin-bottom: 18px; }
 .detalle-bloque h3 { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-600); margin-bottom: 8px; }
@@ -334,7 +331,6 @@
 @media (max-width: 640px) {
   .panel-shell { padding: 0 12px 40px; }
   .panel-header { margin: 0 -12px 14px; flex-wrap: wrap; }
-  .panel-filtros { position: static; }
   .panel-kpis { grid-template-columns: 1fr 1fr; }
   .fila-barra { grid-template-columns: 100px 1fr 32px; }
   .panel-detalle-caja { width: 100%; }
