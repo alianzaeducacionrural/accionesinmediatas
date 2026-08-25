@@ -661,7 +661,7 @@ function detalleSoloLecturaHtml(r) {
     ? `<div class="detalle-bloque"><h3>Acciones sugeridas</h3><ul class="detalle-lista">${r.accionesSugeridas.map((a) => `<li>${escaparHtml(a)}</li>`).join('')}</ul></div>`
     : '';
   const aporteHtml = (r.aporteDepartamento || []).length
-    ? `<div class="detalle-bloque"><h3>Aporte del departamento</h3><div class="chips-solo-lectura">${r.aporteDepartamento.map((a) => `<span class="chip-lectura">${escaparHtml(a)}</span>`).join('')}</div></div>`
+    ? `<div class="detalle-bloque"><h3>Aporte del departamento (Comité de Cafeteros y otros aliados)</h3><div class="chips-solo-lectura">${r.aporteDepartamento.map((a) => `<span class="chip-lectura">${escaparHtml(a)}</span>`).join('')}</div></div>`
     : '';
 
   return `
