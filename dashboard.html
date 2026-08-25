@@ -76,6 +76,10 @@
     <path d="M11 7.5 12.3 6.2a3.2 3.2 0 0 1 4.5 4.5L15.5 12"/>
     <path d="M13 16.5 11.7 17.8a3.2 3.2 0 0 1-4.5-4.5L8.5 12"/>
   </symbol>
+  <symbol id="icono-descargar" viewBox="0 0 24 24">
+    <path d="M12 4v11.4M7.5 11l4.5 4.5L16.5 11"/>
+    <path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/>
+  </symbol>
 </svg>
 
 <div class="panel-shell">
@@ -91,6 +95,10 @@
     </div>
     <div class="panel-header-acciones">
       <span class="panel-actualizado" id="panelActualizado"></span>
+      <button type="button" class="btn-panel" id="btnDescargarExcel">
+        <svg class="icono-svg" aria-hidden="true"><use href="#icono-descargar"/></svg>
+        Descargar Excel
+      </button>
       <button type="button" class="btn-panel" id="btnActualizar">
         <svg class="icono-svg" aria-hidden="true"><use href="#icono-refrescar"/></svg>
         Actualizar

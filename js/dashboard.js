@@ -41,6 +41,7 @@ function iniciar() {
   configurarPanelDetalle();
   document.getElementById('btnActualizar').addEventListener('click', recargarDatosActuales);
   document.getElementById('btnReintentarCarga').addEventListener('click', recargarDatosActuales);
+  document.getElementById('btnDescargarExcel').addEventListener('click', descargarCsv);
   cambiarPestana(departamentoDeUrl());
 }
 
@@ -66,6 +67,13 @@ function escaparHtml(s) {
 
 function cssEscape(s) {
   return (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/"/g, '\\"');
+}
+
+function formatearFecha(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 async function postGAS(payload) {
@@ -490,6 +498,64 @@ function actualizarEncabezadosOrden() {
     th.classList.toggle('orden-activo', activo);
     th.classList.toggle('orden-desc', activo && orden.dir === 'desc');
   });
+}
+
+// ─── Descargar Excel (CSV) ───────────────────────────────────
+// Excel abre .csv directo con doble clic; exporta lo que está filtrado en
+// pantalla, así que en un enlace por departamento (?departamento=X) solo
+// puede exportar los datos de ese departamento — nunca llegaron los otros
+// tres al navegador (misma nota de seguridad que cargarDatos()).
+
+// Los 4 departamentos válidos son un conjunto fijo (DEPARTAMENTOS en
+// js/catalogo.js) — un reemplazo literal es más simple y confiable aquí
+// que un rango Unicode de diacríticos para un solo caso (Quindío).
+function sufijoArchivo() {
+  if (!departamentoActivo) return 'todos';
+  return departamentoActivo
+    .replace('í', 'i')
+    .toLowerCase()
+    .replace(/\s+/g, '-');
+}
+
+function descargarCsv() {
+  const filtrados = obtenerFiltrados();
+  const encabezados = [
+    'Departamento', 'Municipio', 'Vereda', 'Institución', 'Sede',
+    'Rector', 'Teléfono rector', 'Correo rector',
+    'Reportante', 'Teléfono reportante', 'Correo reportante',
+    'Número de estudiantes', 'Tipos de afectación', 'Descripción de afectaciones',
+    'Acciones sugeridas', 'Aporte del departamento', 'Actualizado',
+  ];
+  const csvEscapar = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const unir = (lista) => (lista || []).join(' · ');
+
+  const lineas = [encabezados.map(csvEscapar).join(',')];
+  filtrados.forEach((r) => {
+    lineas.push(
+      [
+        r.departamento, r.municipio, r.vereda, r.institucion, r.sede,
+        r.rector, r.telefonoRector, r.correoRector,
+        r.reportante, r.telefonoReportante, r.correoReportante,
+        r.estudiantesNum != null ? r.estudiantesNum : '',
+        unir(r.afectaciones), r.descripcionAfectaciones,
+        unir(r.accionesSugeridas), unir(r.aporteDepartamento),
+        formatearFecha(r.actualizado),
+      ]
+        .map(csvEscapar)
+        .join(',')
+    );
+  });
+
+  // BOM al inicio para que Excel detecte UTF-8 y no dañe las tildes/ñ.
+  const blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `acciones-inmediatas-${sufijoArchivo()}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 // ─── Panel lateral: detalle de solo lectura ─────────────────
