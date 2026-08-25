@@ -57,6 +57,24 @@
 .btn-panel .icono-svg { width: 15px; height: 15px; }
 .btn-panel:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.35); transform: translateY(-1px); }
 
+/* ─── Título del departamento (páginas de departamento fijo) ─────
+   Reemplaza a las pestañas (ocultas ahí) como lo primero que se ve tras el
+   header: nombre grande del departamento + las etiquetas de aporte, que en
+   estas páginas ya no tiene sentido repetir dentro de la grilla de
+   gráficos (bloqueAporteDepartamento se oculta en su lugar). */
+
+.departamento-titulo-bloque {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;
+  padding: 18px 22px; margin: 14px 0; border-radius: var(--radio);
+  background: var(--superficie); border: 1px solid var(--borde); border-left: 5px solid var(--ambar-500);
+  box-shadow: var(--sombra-xs);
+}
+.departamento-titulo { font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--tinta-900); }
+
+.departamento-aporte { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.departamento-aporte-etiqueta { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-600); }
+.departamento-aporte-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
 /* ─── Pestañas por departamento ───────────────────────────────── */
 
 .panel-pestanas { display: flex; gap: 6px; flex-wrap: wrap; padding: 14px 0; }

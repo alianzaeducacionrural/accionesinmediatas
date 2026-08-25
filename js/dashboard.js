@@ -68,6 +68,12 @@ function iniciar() {
     departamentoFijo = window.DASHBOARD_FIJO.departamento;
     tokenActual = new URLSearchParams(location.search).get('t') || '';
     document.getElementById('panelPestanas').classList.add('oculto');
+    // La tarjeta "Aporte del departamento" de la grilla de gráficos queda
+    // redundante aquí (un solo departamento en pantalla) — se reemplaza
+    // por las etiquetas junto al título.
+    document.getElementById('bloqueAporteDepartamento').classList.add('oculto');
+    document.getElementById('bloqueDepartamentoTitulo').classList.remove('oculto');
+    document.getElementById('departamentoTitulo').textContent = departamentoFijo;
     cambiarPestana(departamentoFijo);
   } else {
     cambiarPestana(null);
@@ -468,7 +474,16 @@ function renderGraficoAcciones(filtrados) {
 // aparecería una vez por cada sede del envío). En cambio se muestra como
 // etiquetas de presencia/ausencia por departamento — ¿ese departamento
 // declaró Especie/Capacidad/Recurso económico en algún envío, sí o no?
+//
+// En una página de departamento fijo no tiene sentido repetir su nombre en
+// una tarjeta aparte (ya está en el título de la página) — las etiquetas
+// se pintan junto al título en su lugar (ver renderAporteHero).
 function renderAporteDepartamento(filtrados) {
+  if (departamentoFijo) {
+    renderAporteHero(filtrados);
+    return;
+  }
+
   const cont = document.getElementById('aporteDepartamento');
   const deptosEnAlcance = departamentoActivo ? [departamentoActivo] : DEPARTAMENTOS;
 
@@ -489,6 +504,17 @@ function renderAporteDepartamento(filtrados) {
         ${etiquetas}
       </div>`;
   }).join('');
+}
+
+function renderAporteHero(filtrados) {
+  const cont = document.getElementById('departamentoAporteChips');
+  const categorias = new Set();
+  filtrados.forEach((r) => (r.aporteDepartamento || []).forEach((a) => categorias.add(a)));
+  const activas = CATEGORIAS_APORTE.filter((c) => categorias.has(c));
+
+  cont.innerHTML = activas.length
+    ? activas.map((c) => `<span class="chip-lectura">${escaparHtml(c)}</span>`).join('')
+    : '<span class="aporte-departamento-vacio">Sin aporte registrado</span>';
 }
 
 // ─── Tabla ───────────────────────────────────────────────────
