@@ -138,7 +138,7 @@
    superior distinto — de un vistazo se distinguen los 4 indicadores sin
    tener que leer la etiqueta primero. */
 
-.panel-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.panel-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
 
 .kpi-tile {
   display: flex; flex-direction: column; gap: 8px; justify-content: center;
@@ -149,6 +149,7 @@
 .kpi-tile-municipios { --acento-kpi: var(--indigo-500); }
 .kpi-tile-instituciones { --acento-kpi: var(--ambar-500); }
 .kpi-tile-sedes { --acento-kpi: var(--exito); }
+.kpi-tile-estudiantes { --acento-kpi: var(--info); }
 
 .kpi-icono {
   width: 34px; height: 34px; border-radius: 10px;

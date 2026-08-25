@@ -369,6 +369,9 @@ function renderKpis(filtrados) {
 
   const municipios = new Set(filtrados.map((r) => `${r.departamento}|${r.municipio}`.toLowerCase()));
   document.getElementById('kpiMunicipios').textContent = municipios.size;
+
+  const estudiantes = filtrados.reduce((acc, r) => acc + (r.estudiantesNum || 0), 0);
+  document.getElementById('kpiEstudiantes').textContent = estudiantes.toLocaleString('es-CO');
 }
 
 // ─── Gráficos: barras horizontales caseras ──────────────────
