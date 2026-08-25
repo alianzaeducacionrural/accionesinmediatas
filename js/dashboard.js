@@ -96,11 +96,6 @@ function formatearFecha(iso) {
   return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function badgeEstado(estado) {
-  const clase = estado === 'Completo' ? 'completo' : 'borrador';
-  return `<span class="badge-estado ${clase}">${escaparHtml(estado)}</span>`;
-}
-
 // ─── Pestañas por departamento ───────────────────────────────
 
 function poblarPestanas() {
@@ -217,12 +212,10 @@ function poblarFiltroMunicipio() {
 function configurarFiltrosEventos() {
   document.getElementById('filtroTexto').addEventListener('input', debounce(renderizarTodo, 200));
   document.getElementById('filtroMunicipio').addEventListener('change', renderizarTodo);
-  document.getElementById('filtroEstado').addEventListener('change', renderizarTodo);
   document.getElementById('filtroAfectacion').addEventListener('change', renderizarTodo);
   document.getElementById('btnLimpiarFiltros').addEventListener('click', () => {
     document.getElementById('filtroTexto').value = '';
     document.getElementById('filtroMunicipio').value = '';
-    document.getElementById('filtroEstado').value = '';
     document.getElementById('filtroAfectacion').value = '';
     renderizarTodo();
   });
@@ -240,13 +233,11 @@ function configurarFiltrosEventos() {
 function obtenerFiltrados() {
   const texto = document.getElementById('filtroTexto').value.trim().toLowerCase();
   const municipio = document.getElementById('filtroMunicipio').value;
-  const estado = document.getElementById('filtroEstado').value;
   const afectacion = document.getElementById('filtroAfectacion').value;
 
   let lista = registros.filter((r) => {
     if (departamentoActivo && r.departamento !== departamentoActivo) return false;
     if (municipio && r.municipio !== municipio) return false;
-    if (estado && r.estado !== estado) return false;
     if (afectacion && !(r.afectaciones || []).includes(afectacion)) return false;
     if (texto) {
       const haystack = `${r.municipio} ${r.institucion} ${r.sede} ${r.rector || ''} ${r.reportante || ''}`.toLowerCase();
@@ -269,14 +260,49 @@ function obtenerFiltrados() {
 
 function renderizarTodo() {
   const filtrados = obtenerFiltrados();
+  renderEnlacesDepartamento();
   renderKpis(filtrados);
   renderGraficoDepartamento(filtrados);
   renderGraficoMunicipio(filtrados);
   renderGraficoAfectaciones(filtrados);
   renderGraficoAcciones(filtrados);
-  renderGraficoAporte(filtrados);
+  renderAporteDepartamento(filtrados);
   renderTabla(filtrados);
   actualizarEncabezadosOrden();
+}
+
+// Solo tiene sentido en la pestaña "Todos": comparte los enlaces filtrados
+// de cada departamento para que se puedan repartir al equipo regional.
+function renderEnlacesDepartamento() {
+  const bloque = document.getElementById('bloqueEnlacesDepartamento');
+  if (departamentoActivo) {
+    bloque.classList.add('oculto');
+    return;
+  }
+  bloque.classList.remove('oculto');
+  const base = location.origin + location.pathname;
+  const cont = document.getElementById('listaEnlacesDepartamento');
+  cont.innerHTML = DEPARTAMENTOS.map((d) => {
+    const url = `${base}?departamento=${encodeURIComponent(d)}`;
+    return `
+      <div class="enlace-departamento-item">
+        <a href="${escaparHtml(url)}">${iconoSvg('icono-enlace')} ${escaparHtml(d)}</a>
+        <button type="button" class="btn-texto" data-url="${escaparHtml(url)}">Copiar enlace</button>
+      </div>`;
+  }).join('');
+  cont.querySelectorAll('button[data-url]').forEach((btn) => {
+    btn.addEventListener('click', () => copiarEnlace(btn));
+  });
+}
+
+function copiarEnlace(btn) {
+  const url = btn.dataset.url;
+  if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+  navigator.clipboard.writeText(url).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copiado ✓';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  }).catch(() => { /* el enlace sigue disponible como texto/href aunque falle copiar */ });
 }
 
 // ─── KPIs ────────────────────────────────────────────────────
@@ -292,14 +318,6 @@ function renderKpis(filtrados) {
 
   const estudiantes = filtrados.reduce((acc, r) => acc + (r.estudiantesNum || 0), 0);
   document.getElementById('kpiEstudiantes').textContent = estudiantes.toLocaleString('es-CO');
-
-  const completos = filtrados.filter((r) => r.estado === 'Completo').length;
-  const borradores = filtrados.length - completos;
-  document.getElementById('kpiCompletos').textContent = completos;
-  document.getElementById('kpiBorradores').textContent = borradores;
-  const pct = filtrados.length ? (completos / filtrados.length) * 100 : 0;
-  document.getElementById('kpiEstadoBarraCompleto').style.width = `${pct}%`;
-  document.getElementById('kpiEstadoBarraBorrador').style.width = `${100 - pct}%`;
 }
 
 // ─── Gráficos: barras horizontales caseras ──────────────────
@@ -318,7 +336,7 @@ function renderBarrasSimple(contenedorId, entradas, { color = 'var(--indigo-500)
     .map((e) => `
       <div class="fila-barra${onClick ? ' fila-barra-click' : ''}" data-clave="${escaparHtml(e.clave)}">
         <span class="etiqueta-barra" title="${escaparHtml(e.etiqueta)}">${escaparHtml(e.etiqueta)}</span>
-        <div class="pista-barra"><div class="segmento" style="width:${Math.round((e.total / max) * 100)}%; background:${color};"></div></div>
+        <div class="pista-barra"><div class="segmento" style="width:${Math.round((e.total / max) * 100)}%; background-color:${color};"></div></div>
         <span class="valor-barra">${e.total}</span>
       </div>`)
     .join('');
@@ -411,17 +429,32 @@ function renderGraficoAcciones(filtrados) {
   renderBarrasSimple('graficoAcciones', entradas, { color: 'var(--indigo-600)' });
 }
 
-// Aporte del departamento es un campo global por envío, duplicado en cada
-// fila de sede de ese envío — se cuenta por fila, no por envío distinto
-// (ver CLAUDE.md).
-function renderGraficoAporte(filtrados) {
-  const conteo = {};
-  filtrados.forEach((r) => (r.aporteDepartamento || []).forEach((a) => { conteo[a] = (conteo[a] || 0) + 1; }));
-  const entradas = CATEGORIAS_APORTE
-    .filter((c) => conteo[c])
-    .map((c) => ({ clave: c, etiqueta: c, total: conteo[c] }))
-    .sort((a, b) => b.total - a.total);
-  renderBarrasSimple('graficoAporte', entradas, { color: 'var(--exito)' });
+// Aporte del departamento es un campo global por envío (no por sede): no
+// tiene sentido contarlo como las demás barras (una misma categoría
+// aparecería una vez por cada sede del envío). En cambio se muestra como
+// etiquetas de presencia/ausencia por departamento — ¿ese departamento
+// declaró Especie/Capacidad/Recurso económico en algún envío, sí o no?
+function renderAporteDepartamento(filtrados) {
+  const cont = document.getElementById('aporteDepartamento');
+  const deptosEnAlcance = departamentoActivo ? [departamentoActivo] : DEPARTAMENTOS;
+
+  const porDepto = {};
+  filtrados.forEach((r) => {
+    if (!porDepto[r.departamento]) porDepto[r.departamento] = new Set();
+    (r.aporteDepartamento || []).forEach((a) => porDepto[r.departamento].add(a));
+  });
+
+  cont.innerHTML = deptosEnAlcance.map((d) => {
+    const categorias = CATEGORIAS_APORTE.filter((c) => porDepto[d] && porDepto[d].has(c));
+    const etiquetas = categorias.length
+      ? `<div class="chips-solo-lectura">${categorias.map((c) => `<span class="chip-lectura">${escaparHtml(c)}</span>`).join('')}</div>`
+      : '<span class="aporte-departamento-vacio">Sin aporte registrado</span>';
+    return `
+      <div class="aporte-departamento-fila">
+        <span class="aporte-departamento-nombre">${escaparHtml(d)}</span>
+        ${etiquetas}
+      </div>`;
+  }).join('');
 }
 
 // ─── Tabla ───────────────────────────────────────────────────
@@ -449,8 +482,7 @@ function renderTabla(filtrados) {
         <td class="col-sede">${escaparHtml(r.sede)}</td>
         <td>${escaparHtml(r.rector || '—')}</td>
         <td class="col-estudiantes">${r.estudiantesNum != null ? escaparHtml(r.estudiantesNum) : '—'}</td>
-        <td>${badgeEstado(r.estado)}</td>
-        <td>${formatearFecha(r.actualizado)}</td>
+        <td class="col-ver"><button type="button" class="btn-ver-mas">Ver más ${iconoSvg('icono-chevron')}</button></td>
       </tr>`)
     .join('');
 
@@ -501,7 +533,7 @@ function detalleSoloLecturaHtml(r) {
   return `
     <div class="detalle-titulo">${escaparHtml(r.institucion)}</div>
     <div class="detalle-sub">${escaparHtml(r.sede)} · ${escaparHtml(r.municipio)}, ${escaparHtml(r.departamento)}</div>
-    <div class="detalle-placas">${badgeEstado(r.estado)}</div>
+    <div class="detalle-actualizado">Actualizado ${formatearFecha(r.actualizado)}</div>
 
     <div class="detalle-bloque">
       <h3>Reportante</h3>
@@ -635,7 +667,6 @@ function abrirEdicion(r) {
   configurarChipsAfectacionEditor(nodo);
   configurarChipsAccionesEditor(nodo);
   configurarChipsSimplesEditor(nodo.querySelector('.ed-chips-aporte'));
-  actualizarBadgeEstadoEditor(nodo);
 
   [
     nodo.querySelector('.ed-rector'), nodo.querySelector('.ed-municipio'),
@@ -654,13 +685,10 @@ function configurarStepperEditor(nodo) {
   const input = nodo.querySelector('.ed-estudiantes');
   nodo.querySelector('.btn-restar').addEventListener('click', () => {
     input.value = Math.max(0, (parseInt(input.value, 10) || 0) - 1);
-    actualizarBadgeEstadoEditor(nodo);
   });
   nodo.querySelector('.btn-sumar').addEventListener('click', () => {
     input.value = (parseInt(input.value, 10) || 0) + 1;
-    actualizarBadgeEstadoEditor(nodo);
   });
-  input.addEventListener('input', () => actualizarBadgeEstadoEditor(nodo));
 }
 
 function configurarChipsAfectacionEditor(nodo) {
@@ -677,7 +705,6 @@ function configurarChipsAfectacionEditor(nodo) {
         if (chipSin) chipSin.classList.remove('activo');
         chip.classList.toggle('activo');
       }
-      actualizarBadgeEstadoEditor(nodo);
     });
   });
 }
@@ -693,35 +720,14 @@ function configurarChipsAccionesEditor(nodo) {
         campoOtra.classList.toggle('oculto', !activo);
         if (activo) inputOtra.focus();
       }
-      actualizarBadgeEstadoEditor(nodo);
     });
   });
-  inputOtra.addEventListener('input', () => actualizarBadgeEstadoEditor(nodo));
 }
 
 function configurarChipsSimplesEditor(contenedor) {
   contenedor.querySelectorAll('.chip').forEach((chip) => {
     chip.addEventListener('click', () => chip.classList.toggle('activo'));
   });
-}
-
-// Refleja en vivo el mismo cálculo que estadoRegistro_ en gas/Code.gs, para
-// que el badge del formulario de edición no contradiga lo que el backend
-// va a guardar.
-function actualizarBadgeEstadoEditor(nodo) {
-  const badge = nodo.querySelector('.ed-badge-estado');
-  const estudiantes = nodo.querySelector('.ed-estudiantes').value;
-  const afectaciones = nodo.querySelectorAll('.ed-chips-afectacion .chip.activo').length;
-  const acciones = nodo.querySelectorAll('.chip-accion.activo').length;
-  const descripcion = nodo.querySelector('.ed-descripcion').value.trim();
-  const rector = nodo.querySelector('.ed-rector').value.trim();
-  const telefonoRector = nodo.querySelector('.ed-rector-telefono').value.trim();
-  const correoRector = nodo.querySelector('.ed-rector-correo').value.trim();
-  const aporte = nodo.querySelectorAll('.ed-chips-aporte .chip.activo').length;
-  const completo = !!(rector || telefonoRector || correoRector || estudiantes !== '' || afectaciones || descripcion || acciones || aporte);
-  badge.textContent = completo ? 'Completo' : 'Borrador';
-  badge.classList.toggle('completo', completo);
-  badge.classList.toggle('borrador', !completo);
 }
 
 function accionesEditorDe(nodo) {

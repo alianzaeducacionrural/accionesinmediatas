@@ -2,7 +2,7 @@
    PANEL DE CONTROL — Acciones inmediatas por departamento
    Construido sobre los tokens de tokens.css (índigo + ámbar) y reusando los
    primitivos de formulario.css (.card, .campo, .control, .chip, .btn*,
-   .stepper, .badge-estado) para el formulario de edición del panel lateral.
+   .stepper) para el formulario de edición del modal de detalle.
    Mismo patrón visual (sin librerías de gráficos) que el dashboard de
    "Encuesta Daños por sismo", adaptado a esta paleta.
    ================================================ */
@@ -11,30 +11,51 @@
 
 .panel-shell { max-width: 1280px; margin: 0 auto; padding: 0 20px 60px; }
 
-/* ─── Barra superior ────────────────────────────────────────── */
+/* ─── Barra superior ────────────────────────────────────────────
+   Mismo degradado de marca que el header del formulario público
+   (índigo profundo + acentos ámbar) — el panel debe sentirse parte de la
+   misma plataforma, no una herramienta interna aparte. */
 
 .panel-header {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 16px 20px; margin: 0 -20px 14px;
-  background: var(--superficie); border-bottom: 1px solid var(--borde);
+  padding: 20px 24px; margin: 0 -20px 14px;
+  background: linear-gradient(150deg, #14172B 0%, #1E2350 30%, #2C3480 62%, #37489C 100%);
+  color: #F1F3FC;
+  position: relative; overflow: hidden;
 }
-.panel-header-marca { display: flex; align-items: center; gap: 12px; }
-.panel-header-marca > .icono-svg { width: 26px; height: 26px; color: var(--indigo-600); flex-shrink: 0; }
-.panel-header-titulo { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.08rem; color: var(--tinta-900); line-height: 1.25; }
-.panel-header-sub { font-size: 0.78rem; color: var(--tinta-600); margin-top: 2px; }
+.panel-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle 420px at -6% 130%, rgba(232,152,31,0.22) 0%, transparent 58%),
+    radial-gradient(circle 320px at 104% -20%, rgba(255,255,255,0.10) 0%, transparent 52%);
+  pointer-events: none;
+}
+.panel-header > * { position: relative; z-index: 1; }
+
+.panel-header-marca { display: flex; align-items: center; gap: 14px; }
+.panel-header-icono {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+}
+.panel-header-icono .icono-svg { width: 22px; height: 22px; color: var(--ambar-300); }
+.panel-header-titulo { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.2rem; line-height: 1.2; }
+.panel-header-sub { font-size: 0.8rem; opacity: 0.85; margin-top: 3px; }
 
 .panel-header-acciones { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.panel-actualizado { font-size: 0.75rem; color: var(--tinta-600); }
+.panel-actualizado { font-size: 0.75rem; opacity: 0.8; }
 
 .btn-panel {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 13px; border-radius: var(--radio-sm); border: 1.5px solid var(--tinta-300);
-  background: var(--superficie); color: var(--tinta-700); font-size: 0.82rem; font-weight: 600;
-  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
+  padding: 9px 15px; border-radius: var(--radio-sm); border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.1); color: #fff; font-size: 0.82rem; font-weight: 600;
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+  backdrop-filter: blur(2px);
 }
 .btn-panel .icono-svg { width: 15px; height: 15px; }
-.btn-panel:hover { border-color: var(--indigo-500); color: var(--indigo-700); background: var(--indigo-50); }
+.btn-panel:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.35); transform: translateY(-1px); }
 
 /* ─── Pestañas por departamento ───────────────────────────────── */
 
@@ -58,7 +79,7 @@
 /* ─── Filtros ───────────────────────────────────────────────── */
 
 .panel-filtros {
-  position: sticky; top: 130px; z-index: 15;
+  position: sticky; top: 148px; z-index: 15;
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
   padding: 10px 0 14px; background: var(--papel);
 }
@@ -88,31 +109,59 @@
 .tarjeta-panel {
   background: var(--superficie); border: 1px solid var(--borde);
   border-radius: var(--radio); padding: 18px 20px; box-shadow: var(--sombra-xs);
+  animation: entrada-bloque 0.4s var(--ease-out);
+  transition: box-shadow var(--t-fast), transform var(--t-fast);
 }
 .tarjeta-panel-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .tarjeta-panel-cabeza h2 { font-size: 1rem; font-weight: 700; color: var(--tinta-900); }
 .tarjeta-panel-nota { font-size: 0.75rem; color: var(--tinta-600); }
 
 /* ─── KPIs ──────────────────────────────────────────────────── */
+/* Cada tile lleva un ícono en una pastilla de color y un acento de borde
+   superior distinto — de un vistazo se distinguen los 4 indicadores sin
+   tener que leer la etiqueta primero. */
 
-.panel-kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 18px; }
+.panel-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+
+.kpi-tile {
+  display: flex; flex-direction: column; gap: 8px; justify-content: center;
+  border-top: 3px solid var(--acento-kpi, var(--indigo-500));
+}
+.kpi-tile:hover { box-shadow: var(--sombra-sm); transform: translateY(-2px); }
+
+.kpi-tile-municipios { --acento-kpi: var(--indigo-500); }
+.kpi-tile-instituciones { --acento-kpi: var(--ambar-500); }
+.kpi-tile-sedes { --acento-kpi: var(--exito); }
+.kpi-tile-estudiantes { --acento-kpi: var(--info); }
+
+.kpi-icono {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: color-mix(in srgb, var(--acento-kpi, var(--indigo-500)) 14%, transparent);
+  color: var(--acento-kpi, var(--indigo-500));
+  display: flex; align-items: center; justify-content: center;
+}
+.kpi-icono .icono-svg { width: 17px; height: 17px; }
 
 .kpi-etiqueta { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-600); }
-.kpi-tile { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
-.kpi-numero { font-size: 1.9rem; font-weight: 800; color: var(--tinta-900); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi-numero { font-size: 2.1rem; font-weight: 800; color: var(--tinta-900); line-height: 1.1; font-variant-numeric: tabular-nums; }
 .kpi-sub { font-size: 0.76rem; color: var(--tinta-600); }
 
-.kpi-estado-stats { display: flex; align-items: center; gap: 12px; margin: 2px 0 8px; }
-.kpi-estado-stat { display: flex; flex-direction: column; gap: 1px; }
-.kpi-estado-numero { font-size: 1.4rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.kpi-estado-label { font-size: 0.68rem; color: var(--tinta-600); font-weight: 600; }
-.kpi-estado-completo .kpi-estado-numero { color: var(--exito-ink); }
-.kpi-estado-borrador .kpi-estado-numero { color: var(--alerta-ink); }
-.kpi-estado-divisor { width: 1px; align-self: stretch; background: var(--borde); }
+/* ─── Enlaces por departamento (vista consolidada) ───────────── */
 
-.kpi-estado-barra { display: flex; height: 7px; border-radius: var(--radio-pill); overflow: hidden; background: var(--borde-suave); }
-.kpi-estado-barra-completo { background: var(--exito); height: 100%; transition: width var(--t-fast); }
-.kpi-estado-barra-borrador { background: var(--alerta); height: 100%; transition: width var(--t-fast); }
+.bloque-enlaces { margin-bottom: 14px; border-left: 4px solid var(--ambar-500); }
+.lista-enlaces-departamento { display: flex; flex-wrap: wrap; gap: 10px; }
+.enlace-departamento-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px 8px 14px; border-radius: var(--radio-pill); border: 1.5px solid var(--indigo-100);
+  background: var(--indigo-50);
+}
+.enlace-departamento-item a {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.85rem; font-weight: 700; color: var(--indigo-700); text-decoration: none;
+}
+.enlace-departamento-item a:hover { text-decoration: underline; }
+.enlace-departamento-item a .icono-svg { width: 14px; height: 14px; }
+.enlace-departamento-item .btn-texto { padding: 4px 8px; font-size: 0.78rem; }
 
 /* ─── Gráficos: barras horizontales caseras ────────────────── */
 
@@ -127,8 +176,25 @@
 
 .fila-barra .etiqueta-barra { font-size: 0.82rem; color: var(--tinta-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fila-barra .pista-barra { height: 18px; background: var(--borde-suave); border-radius: 6px; overflow: hidden; }
-.fila-barra .pista-barra .segmento { height: 100%; width: 0; border-radius: 6px; transition: width 0.5s var(--ease-out); }
+.fila-barra .pista-barra .segmento {
+  height: 100%; width: 0; border-radius: 6px; transition: width 0.6s var(--ease-out);
+  background-image: linear-gradient(90deg, rgba(255,255,255,0.22), rgba(255,255,255,0));
+}
 .fila-barra .valor-barra { font-size: 0.8rem; font-weight: 700; color: var(--tinta-700); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ─── Aporte del departamento: etiquetas, no barras ──────────── */
+/* Es un campo global por envío (no por sede) — mostrarlo como barra
+   contada por fila sobrestima el aporte real. En cambio, una fila por
+   departamento con las categorías que sí se declararon en algún envío. */
+
+.lista-aporte-departamento { display: flex; flex-direction: column; gap: 10px; }
+.aporte-departamento-fila {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 8px 0; border-bottom: 1px solid var(--borde-suave);
+}
+.aporte-departamento-fila:last-child { border-bottom: none; }
+.aporte-departamento-nombre { font-size: 0.85rem; font-weight: 700; color: var(--tinta-900); min-width: 120px; }
+.aporte-departamento-vacio { font-size: 0.8rem; color: var(--tinta-400); font-style: italic; }
 
 /* ─── Tabla ─────────────────────────────────────────────────── */
 
@@ -149,13 +215,31 @@
 .tabla-panel thead th.orden-activo .icono-orden { opacity: 1; color: var(--indigo-600); }
 .tabla-panel thead th.orden-desc .icono-orden { transform: scaleY(-1); }
 
-.tabla-panel tbody tr { cursor: pointer; transition: background var(--t-fast); }
-.tabla-panel tbody tr:hover { background: var(--indigo-50); }
+.tabla-panel tbody tr {
+  cursor: pointer;
+  transition: background var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+}
+.tabla-panel tbody tr:hover {
+  background: var(--indigo-50);
+  box-shadow: inset 3px 0 0 var(--indigo-500);
+}
 .tabla-panel tbody tr:not(:last-child) { border-bottom: 1px solid var(--borde-suave); }
 .tabla-panel td { padding: 11px 14px; color: var(--tinta-700); white-space: nowrap; }
 .tabla-panel td.col-institucion, .tabla-panel td.col-sede { white-space: normal; max-width: 220px; }
 .tabla-panel td.col-estudiantes { font-variant-numeric: tabular-nums; text-align: right; }
 .tabla-panel th[data-orden="estudiantesNum"] { text-align: right; }
+
+.tabla-panel td.col-ver { text-align: right; }
+.btn-ver-mas {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border: none; border-radius: var(--radio-pill);
+  background: linear-gradient(135deg, var(--indigo-500), var(--indigo-700));
+  color: #fff; font-size: 0.8rem; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(55,72,156,0.28);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+.btn-ver-mas .icono-svg { width: 13px; height: 13px; }
+.tabla-panel tbody tr:hover .btn-ver-mas { transform: translateX(2px); box-shadow: 0 4px 12px rgba(55,72,156,0.35); }
 
 /* La pestaña de un departamento específico no necesita repetir la columna
    Departamento en cada fila — se oculta con una sola clase en <table> en
@@ -164,31 +248,38 @@
 
 .tabla-vacia { text-align: center; padding: 40px 20px; color: var(--tinta-600); font-size: 0.85rem; }
 
-/* ─── Panel lateral de detalle / edición ─────────────────────── */
+/* ─── Modal de detalle / edición ──────────────────────────────
+   Antes era un panel deslizante desde la derecha; ahora es un modal grande
+   centrado — más espacio para leer y editar todos los campos de una sede,
+   y la fila de la tabla ya tiene su propio botón "Ver más" bien visible
+   como disparador. */
 
 .panel-detalle {
   position: fixed; inset: 0; z-index: 210;
-  display: flex; justify-content: flex-end;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
 }
 .panel-detalle.oculto { display: none; }
-.panel-detalle-fondo { position: absolute; inset: 0; background: rgba(20, 23, 43, 0.4); }
+.panel-detalle-fondo { position: absolute; inset: 0; background: rgba(20, 23, 43, 0.55); }
 
 .panel-detalle-caja {
-  position: relative; width: min(460px, 100%); height: 100%; background: var(--papel);
-  box-shadow: var(--sombra-lg); overflow-y: auto; padding: 22px;
+  position: relative; width: min(760px, 100%); max-height: min(88vh, 900px);
+  background: var(--papel); border-radius: var(--radio);
+  box-shadow: var(--sombra-lg); overflow-y: auto; padding: 30px 34px;
   animation: entrada-panel-detalle 0.22s var(--ease-out);
 }
-@keyframes entrada-panel-detalle { from { transform: translateX(24px); opacity: 0.6; } to { transform: translateX(0); opacity: 1; } }
+@keyframes entrada-panel-detalle { from { transform: scale(0.96) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
 
 .panel-detalle-cerrar {
-  position: absolute; top: 18px; right: 18px; background: none; border: none; color: var(--tinta-600);
-  padding: 7px; border-radius: 7px; display: flex; transition: background var(--t-fast), color var(--t-fast);
+  position: absolute; top: 18px; right: 18px; background: var(--superficie); border: 1px solid var(--borde); color: var(--tinta-600);
+  padding: 8px; border-radius: 50%; display: flex; transition: background var(--t-fast), color var(--t-fast);
 }
 .panel-detalle-cerrar:hover { background: var(--peligro-bg); color: var(--peligro-ink); }
 .panel-detalle-cerrar .icono-svg { width: 16px; height: 16px; }
 
-.detalle-titulo { font-family: 'Sora', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--tinta-900); padding-right: 30px; }
-.detalle-sub { font-size: 0.83rem; color: var(--tinta-600); margin-top: 3px; }
+.detalle-titulo { font-family: 'Sora', sans-serif; font-size: 1.35rem; font-weight: 700; color: var(--tinta-900); padding-right: 34px; }
+.detalle-sub { font-size: 0.88rem; color: var(--tinta-600); margin-top: 4px; }
+.detalle-actualizado { font-size: 0.76rem; color: var(--tinta-400); margin-top: 6px; }
 .detalle-placas { display: flex; gap: 8px; margin: 12px 0 18px; flex-wrap: wrap; }
 
 .detalle-bloque { margin-bottom: 18px; }
@@ -224,10 +315,14 @@
 
 .form-editor .campo { margin-bottom: 16px; }
 .editor-acciones {
-  display: flex; gap: 10px; margin-top: 6px; position: sticky; bottom: -22px;
+  display: flex; gap: 10px; margin-top: 6px; position: sticky; bottom: -30px;
   background: var(--papel); padding: 14px 0 4px;
 }
 .editor-acciones .btn { flex: 1; }
+
+/* ─── Pie de página ───────────────────────────────────────────── */
+
+.panel-footer { text-align: center; padding: 28px 16px 8px; font-size: 0.78rem; color: var(--tinta-400); }
 
 /* ─── Responsive ────────────────────────────────────────────── */
 

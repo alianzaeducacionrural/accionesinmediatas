@@ -58,7 +58,11 @@ Google Sheets "Acciones inmediatas por departamento — Registro" (pestaña "reg
   cualquier reportante, `intentarAutocompletarRector()` lo completa
   automáticamente — solo si los 3 campos de rector están vacíos, para no
   pisar lo ya escrito; los datos vienen de `accion=rectoresConocidos`,
-  cargados una vez al iniciar (`cargarRectoresConocidos()`).
+  cargados una vez al iniciar (`cargarRectoresConocidos()`). Lo mismo pasa
+  con el nombre del reportante: si ya reportó antes, `intentarAutocompletarReportante()`
+  completa su correo/teléfono desde `accion=reportantes` (solo si ambos
+  campos están vacíos). El `<datalist>` de nombres conocidos se puebla con
+  `appendChild` — `datalist.add()` no existe (ese método es de `<select>`).
 - [gas/Code.gs](gas/Code.gs) — backend. `inicializar()` crea el spreadsheet
   (una vez) dentro de la carpeta de Drive del proyecto y siembra la pestaña
   `registros`. `normalizarCamposRegistro_()` centraliza la normalización y
@@ -75,15 +79,25 @@ Google Sheets "Acciones inmediatas por departamento — Registro" (pestaña "reg
   en `js/dashboard.js`). Pestañas para cambiar de departamento (actualizan
   la URL); solo entrar o volver a "Todos" dispara el fetch consolidado —
   cambiar a un departamento específico sin haberlo cargado ya pide un fetch
-  nuevo acotado a ese departamento. KPIs, gráficos de barras caseros (sin
-  librerías, mismo patrón que `Encuesta Daños por sismo/dashboard.html`) y
-  una tabla ordenable/filtrable. Cada fila abre un panel lateral de detalle
-  con botones Editar (formulario clonado de `<template id="tpl-editor-sede">`,
-  reusa `.chip`/`.campo`/`.control`/`.stepper`/`.badge-estado` de
-  `formulario.css` y `nombrePropio()` para la vista previa) y Eliminar
-  (confirmación de dos clics). A diferencia del formulario público,
-  municipio/institución/sede se editan como texto libre (sin la cascada de
-  catálogo de Caldas) porque quien edita ya tiene datos reales que corregir.
+  nuevo acotado a ese departamento. La vista consolidada además muestra una
+  tarjeta "Enlaces por departamento" (`renderEnlacesDepartamento()`) con los
+  4 enlaces listos para compartir con cada equipo regional, cada uno con
+  botón "Copiar enlace" (Clipboard API).
+  KPIs (municipios · instituciones · sedes · estudiantes por atender — sin
+  "estado", ver más abajo), gráficos de barras caseros (sin librerías,
+  mismo patrón que `Encuesta Daños por sismo/dashboard.html`) y una tabla
+  ordenable/filtrable donde cada fila termina en un botón "Ver más" muy
+  visible. Clic en la fila o en el botón abre un **modal centrado y grande**
+  (no un panel lateral) con el detalle completo, y desde ahí Editar
+  (formulario clonado de `<template id="tpl-editor-sede">`, reusa
+  `.chip`/`.campo`/`.control`/`.stepper` de `formulario.css` y
+  `nombrePropio()` para la vista previa) o Eliminar (confirmación de dos
+  clics). A diferencia del formulario público, municipio/institución/sede
+  se editan como texto libre (sin la cascada de catálogo de Caldas) porque
+  quien edita ya tiene datos reales que corregir. "Aporte del departamento"
+  **no** se grafica como barras (es un campo global por envío, no por sede
+  — contarlo por fila sobrestimaría el aporte real): se muestra como
+  etiquetas de presencia/ausencia por departamento (`renderAporteDepartamento()`).
 
 **Contrato del backend** (mismo patrón `{ ok, data | error }` que el resto
 de proyectos GAS del usuario):
@@ -91,7 +105,7 @@ de proyectos GAS del usuario):
 | Método | `accion` | Devuelve |
 |---|---|---|
 | GET | `reportantes` | nombre/correo/teléfono/departamento más recientes por reportante — autocompletar |
-| GET | `misRegistros&reportante=Nombre` | sedes ya guardadas (Borrador o Completo) por ese reportante |
+| GET | `misRegistros&reportante=Nombre` | sedes ya guardadas por ese reportante |
 | GET | `todosLosRegistros[&departamento=]` | todas las filas, o solo las de un departamento — lo consume `dashboard.html` |
 | GET | `rectoresConocidos` | último rector (nombre/correo/teléfono) por institución ya diligenciada — autocompletar |
 | POST | `guardarRegistro` | upsert por clave natural `Departamento\|Municipio\|Institución\|Sede` |
@@ -108,7 +122,14 @@ cambiarlo a `application/json`.**
 Teléfono reportante · Departamento · Municipio · Vereda · Institución ·
 Sede · Rector · Correo rector · Teléfono rector · Número de estudiantes ·
 Tipos de afectación (JSON) · Descripción de afectaciones · Acciones
-sugeridas (JSON) · Aporte del departamento (JSON) · Estado`
+sugeridas (JSON) · Aporte del departamento (JSON)`
+
+No hay columna de estado (Borrador/Completo): se quitó porque todos los
+envíos llegan como reportes ya completados, la distinción no aportaba
+nada. Era la última columna, así que quitarla no corrió el resto — se
+borró físicamente del Sheet real con una migración de un solo uso (ya no
+está en el código; si hace falta repetir el patrón, ver el historial de
+`gas/Code.gs`).
 
 `Rector`/`Correo rector`/`Teléfono rector` se capturan una sola vez por
 institución en el formulario, pero se guardan repetidos en cada fila de
@@ -121,8 +142,7 @@ un único grupo de chips al final del formulario (`Especie`/`Capacidad`/
 fuera de `#listaInstituciones` — `enviarTodo()` lo calcula una vez
 (`recopilarAporteDepartamento()`) y lo copia igual a cada `item`.
 
-`Estado` es `Borrador` (sede guardada sin rector/estudiantes/afectaciones/
-descripción/acciones sugeridas) o `Completo`. La vereda se pide por sede,
+La vereda se pide por sede,
 no por institución — una misma institución puede tener sedes en veredas
 distintas. Los teléfonos (`Teléfono reportante`, `Teléfono rector`) se
 guardan forzados a texto (`comoTexto_` en `gas/Code.gs`, prefijo de

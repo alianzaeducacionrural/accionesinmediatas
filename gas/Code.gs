@@ -35,7 +35,7 @@ var HEADERS_REGISTROS = [
   'Departamento', 'Municipio', 'Vereda', 'Institución', 'Sede', 'Rector',
   'Correo rector', 'Teléfono rector',
   'Número de estudiantes', 'Tipos de afectación', 'Descripción de afectaciones',
-  'Acciones sugeridas', 'Aporte del departamento', 'Estado',
+  'Acciones sugeridas', 'Aporte del departamento',
 ];
 
 // Índices 1-based de columnas.
@@ -44,7 +44,7 @@ var COL = {
   DEPARTAMENTO: 7, MUNICIPIO: 8, VEREDA: 9, INSTITUCION: 10, SEDE: 11,
   RECTOR: 12, CORREO_RECTOR: 13, TELEFONO_RECTOR: 14,
   ESTUDIANTES: 15, AFECTACIONES: 16, DESCRIPCION: 17,
-  ACCIONES_SUGERIDAS: 18, APORTE_DEPARTAMENTO: 19, ESTADO: 20,
+  ACCIONES_SUGERIDAS: 18, APORTE_DEPARTAMENTO: 19,
 };
 
 var DEPARTAMENTOS_VALIDOS = ['Caldas', 'Risaralda', 'Quindío', 'Valle del Cauca'];
@@ -171,8 +171,8 @@ function reportantes_() {
 }
 
 // ─── GET ?accion=misRegistros&reportante=... ────────────────
-// Filas ya guardadas (Borrador o Completo) por ese reportante, para que las
-// retome y complete después sin duplicarlas.
+// Filas ya guardadas por ese reportante, para que las retome y complete
+// después sin duplicarlas.
 
 function misRegistros_(nombreReportante) {
   var sheet = getSheet_('registros');
@@ -272,7 +272,6 @@ function filaAObjeto_(f) {
     descripcionAfectaciones: f[COL.DESCRIPCION - 1],
     accionesSugeridas: accionesSugeridas,
     aporteDepartamento: aporteDepartamento,
-    estado: f[COL.ESTADO - 1],
   };
 }
 
@@ -302,7 +301,7 @@ function siguienteId_(sheet) {
 // sede ya estaba guardada por el mismo reportante, actualiza esa fila; si
 // no existe, crea una nueva. Todos los campos de texto pasan por
 // nombrePropio_() antes de guardarse. Departamento, municipio, institución
-// y sede son obligatorios; el resto puede llegar vacío (queda "Borrador").
+// y sede son obligatorios; el resto puede llegar vacío.
 
 function normalizarCamposRegistro_(datos) {
   var reportante = String((datos.reportante && datos.reportante.nombre) || '').trim();
@@ -341,13 +340,6 @@ function normalizarCamposRegistro_(datos) {
   };
 }
 
-function estadoRegistro_(campos) {
-  var tieneContenido = !!(campos.rector || campos.correoRector || campos.telefonoRector ||
-    campos.numeroEstudiantes !== '' || campos.afectaciones.length || campos.descripcionAfectaciones ||
-    campos.accionesSugeridas.length || campos.aporteDepartamento.length);
-  return tieneContenido ? 'Completo' : 'Borrador';
-}
-
 function guardarRegistro_(datos) {
   var campos = normalizarCamposRegistro_(datos);
 
@@ -364,7 +356,6 @@ function guardarRegistro_(datos) {
       throw new Error('La sede "' + campos.sede + '" ya fue registrada por ' + existente.valores[COL.REPORTANTE - 1] + '.');
     }
 
-    var estado = estadoRegistro_(campos);
     var ahora = new Date();
 
     var fila = [
@@ -375,16 +366,16 @@ function guardarRegistro_(datos) {
       campos.departamento, campos.municipio, campos.vereda, campos.institucion, campos.sede, campos.rector,
       campos.correoRector, comoTexto_(campos.telefonoRector),
       campos.numeroEstudiantes, JSON.stringify(campos.afectaciones), campos.descripcionAfectaciones,
-      JSON.stringify(campos.accionesSugeridas), JSON.stringify(campos.aporteDepartamento), estado,
+      JSON.stringify(campos.accionesSugeridas), JSON.stringify(campos.aporteDepartamento),
     ];
 
     if (existente) {
       sheet.getRange(existente.numeroFila, 1, 1, fila.length).setValues([fila]);
-      return { id: fila[0], estado: estado, actualizado: true };
+      return { id: fila[0], actualizado: true };
     }
 
     sheet.appendRow(fila);
-    return { id: fila[0], estado: estado, actualizado: false };
+    return { id: fila[0], actualizado: false };
   } finally {
     lock.releaseLock();
   }
@@ -394,7 +385,7 @@ function guardarRegistro_(datos) {
 // Actualiza por id, sin restricción de reportante: a diferencia de
 // guardarRegistro_ (formulario público, upsert por clave natural + dueño),
 // esta acción la usa el dashboard, un panel administrativo sin sesión de
-// reportante. Conserva la Marca temporal original y recalcula Estado.
+// reportante. Conserva la Marca temporal original.
 
 function editarRegistro_(datos) {
   var id = String(datos.id || '').trim();
@@ -422,17 +413,16 @@ function editarRegistro_(datos) {
       if (claveOtra === clave) throw new Error('Ya existe otra sede con esa combinación de Departamento/Municipio/Institución/Sede.');
     }
 
-    var estado = estadoRegistro_(campos);
     var fila = [
       id, original[1], new Date(),
       campos.reportante, campos.correoReportante, comoTexto_(campos.telefonoReportante),
       campos.departamento, campos.municipio, campos.vereda, campos.institucion, campos.sede, campos.rector,
       campos.correoRector, comoTexto_(campos.telefonoRector),
       campos.numeroEstudiantes, JSON.stringify(campos.afectaciones), campos.descripcionAfectaciones,
-      JSON.stringify(campos.accionesSugeridas), JSON.stringify(campos.aporteDepartamento), estado,
+      JSON.stringify(campos.accionesSugeridas), JSON.stringify(campos.aporteDepartamento),
     ];
     sheet.getRange(numeroFila, 1, 1, fila.length).setValues([fila]);
-    return { id: id, estado: estado };
+    return { id: id };
   } finally {
     lock.releaseLock();
   }

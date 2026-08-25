@@ -178,10 +178,6 @@ select.control:disabled {
 .sede-head .titulo .icono-svg { width: 14px; height: 14px; color: var(--indigo-600); }
 .sede-body { padding: 18px; }
 
-.badge-estado { font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: var(--radio-pill); margin-left: 6px; white-space: nowrap; }
-.badge-estado.borrador { color: var(--alerta-ink); background: var(--alerta-bg); }
-.badge-estado.completo { color: var(--exito-ink); background: var(--exito-bg); }
-
 /* ─── Alertas / mensajes ─────────────────────── */
 .alerta { border-radius: var(--radio-sm); padding: 13px 16px; font-size: 0.87rem; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; font-weight: 500; animation: entrada-bloque 0.3s var(--ease-out); }
 .alerta .icono-svg { width: 17px; height: 17px; margin-top: 1px; flex-shrink: 0; }

@@ -14,6 +14,7 @@ const COLLATOR_ES = new Intl.Collator('es', { sensitivity: 'base' });
 let itemsEnvioPendientes = [];
 let temporizadorAutoguardadoTexto = null;
 let rectoresConocidos = {};
+let reportantesConocidos = {};
 
 let elReportanteNombre, elReportanteCorreo, elReportanteTelefono;
 let elSelectDepartamento;
@@ -104,6 +105,7 @@ function configurarReportante() {
     } else {
       previa.classList.add('oculto');
     }
+    intentarAutocompletarReportante();
     guardarBorrador();
   });
   elReportanteNombre.addEventListener('blur', () => cargarMisReportes());
@@ -140,10 +142,33 @@ async function cargarReportantesConocidos() {
     const lista = await getGAS({ accion: 'reportantes' });
     const datalist = document.getElementById('listaReportantes');
     datalist.innerHTML = '';
-    lista.forEach((r) => datalist.add(new Option(r.nombre)));
+    reportantesConocidos = {};
+    lista.forEach((r) => {
+      // <datalist> no tiene .add() (eso es de <select>) — se puebla con
+      // appendChild como cualquier otro nodo.
+      datalist.appendChild(new Option(r.nombre));
+      reportantesConocidos[normalizarClave_(r.nombre)] = r;
+    });
   } catch (err) {
     // El autocompletado es una mejora, no bloquea el formulario si falla.
   }
+}
+
+function normalizarClave_(s) {
+  return String(s || '').trim().toLowerCase();
+}
+
+// Si el nombre del reportante ya tiene correo/teléfono guardados de un
+// envío anterior (propio o de otro dispositivo), los completa — solo si
+// ambos campos están vacíos, para no pisar lo que se acaba de escribir.
+function intentarAutocompletarReportante() {
+  const datos = reportantesConocidos[normalizarClave_(elReportanteNombre.value)];
+  if (!datos) return;
+  if (elReportanteCorreo.value.trim() || elReportanteTelefono.value.trim()) return;
+
+  elReportanteCorreo.value = datos.correo || '';
+  elReportanteTelefono.value = datos.telefono || '';
+  guardarBorrador();
 }
 
 // Último rector guardado por institución (cualquier reportante, cualquier
@@ -207,9 +232,7 @@ async function cargarMisReportes() {
       div.innerHTML = `
         <div>
           <div class="nombre">${escaparHtml(r.institucion)} — ${escaparHtml(r.sede)}</div>
-          <div class="lugar">${escaparHtml(r.departamento)}, ${escaparHtml(r.municipio)} ·
-            <span class="badge-estado ${r.estado === 'Completo' ? 'completo' : 'borrador'}">${escaparHtml(r.estado)}</span>
-          </div>
+          <div class="lugar">${escaparHtml(r.departamento)}, ${escaparHtml(r.municipio)}</div>
         </div>
         <button type="button" class="btn-texto">${iconoSvg('icono-lapiz')} Editar</button>`;
       div.querySelector('.btn-texto').addEventListener('click', () => retomarRegistro(r));
@@ -547,7 +570,7 @@ function agregarSede(institucionBloque, datosPrevios) {
   configurarChipsAcciones(nodo);
 
   nodo.querySelector('.input-vereda').addEventListener('input', (e) => { previsualizarNombrePropio(e.target); guardarBorrador(); });
-  nodo.querySelector('.textarea-descripcion').addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(nodo); });
+  nodo.querySelector('.textarea-descripcion').addEventListener('input', () => guardarBorrador());
 
   institucionBloque.querySelector('.sedes-lista').appendChild(nodo);
   renumerarSedesDe(institucionBloque);
@@ -575,7 +598,6 @@ function agregarSede(institucionBloque, datosPrevios) {
         if (inputOtra) inputOtra.value = a;
       }
     });
-    actualizarBadgeEstadoSede(nodo);
   }
 
   return nodo;
@@ -586,14 +608,12 @@ function configurarStepper(sedeBloque) {
   sedeBloque.querySelector('.btn-restar').addEventListener('click', () => {
     input.value = Math.max(0, (parseInt(input.value, 10) || 0) - 1);
     guardarBorrador();
-    actualizarBadgeEstadoSede(sedeBloque);
   });
   sedeBloque.querySelector('.btn-sumar').addEventListener('click', () => {
     input.value = (parseInt(input.value, 10) || 0) + 1;
     guardarBorrador();
-    actualizarBadgeEstadoSede(sedeBloque);
   });
-  input.addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(sedeBloque); });
+  input.addEventListener('input', () => guardarBorrador());
 }
 
 function configurarChipsAfectacion(sedeBloque) {
@@ -611,7 +631,6 @@ function configurarChipsAfectacion(sedeBloque) {
         chip.classList.toggle('activo');
       }
       guardarBorrador();
-      actualizarBadgeEstadoSede(sedeBloque);
     });
   });
 }
@@ -632,12 +651,11 @@ function configurarChipsAcciones(sedeBloque) {
         if (activo) inputOtra.focus();
       }
       guardarBorrador();
-      actualizarBadgeEstadoSede(sedeBloque);
     });
   });
 
   if (inputOtra) {
-    inputOtra.addEventListener('input', () => { guardarBorrador(); actualizarBadgeEstadoSede(sedeBloque); });
+    inputOtra.addEventListener('input', () => guardarBorrador());
   }
 }
 
@@ -653,19 +671,6 @@ function accionesSugeridasDe(sedeBloque) {
       return chip.dataset.valor;
     })
     .filter((v) => v);
-}
-
-function actualizarBadgeEstadoSede(sedeBloque) {
-  const badge = sedeBloque.querySelector('.badge-estado-sede');
-  if (!badge) return;
-  const estudiantes = sedeBloque.querySelector('.input-estudiantes').value;
-  const afectaciones = sedeBloque.querySelectorAll('.chips-afectacion .chip.activo').length;
-  const accionesSugeridas = sedeBloque.querySelectorAll('.chip-accion.activo').length;
-  const descripcion = sedeBloque.querySelector('.textarea-descripcion').value.trim();
-  const completo = !!(estudiantes !== '' || afectaciones || accionesSugeridas || descripcion);
-  badge.textContent = completo ? 'Completo' : 'Borrador';
-  badge.classList.toggle('completo', completo);
-  badge.classList.toggle('borrador', !completo);
 }
 
 // ─── Recopilar datos del formulario ──────────────────────────

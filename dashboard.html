@@ -62,6 +62,20 @@
     <circle cx="17" cy="9" r="2.4"/>
     <path d="M15.3 13.1a4.3 4.3 0 0 1 5.2 4.2"/>
   </symbol>
+  <symbol id="icono-chevron" viewBox="0 0 24 24">
+    <path d="m9 5 7 7-7 7"/>
+  </symbol>
+  <symbol id="icono-edificio" viewBox="0 0 24 24">
+    <path d="M4 21V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v16"/>
+    <path d="M13 10h6a1 1 0 0 1 1 1v10"/>
+    <path d="M4 21h16"/>
+    <path d="M8 8h1M8 12h1M8 16h1M16 14h1M16 18h1"/>
+  </symbol>
+  <symbol id="icono-enlace" viewBox="0 0 24 24">
+    <path d="M9.5 14.5 14.5 9.5"/>
+    <path d="M11 7.5 12.3 6.2a3.2 3.2 0 0 1 4.5 4.5L15.5 12"/>
+    <path d="M13 16.5 11.7 17.8a3.2 3.2 0 0 1-4.5-4.5L8.5 12"/>
+  </symbol>
 </svg>
 
 <div class="panel-shell">
@@ -69,10 +83,10 @@
   <!-- ─── Barra superior ──────────────────────────────────────── -->
   <header class="panel-header">
     <div class="panel-header-marca">
-      <svg class="icono-svg" aria-hidden="true"><use href="#icono-mapa"/></svg>
+      <div class="panel-header-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-mapa"/></svg></div>
       <div>
-        <div class="panel-header-titulo">Panel de control — Acciones inmediatas por departamento</div>
-        <div class="panel-header-sub">Comité de Cafeteros · instituciones educativas rurales de Caldas, Risaralda, Quindío y Valle del Cauca</div>
+        <div class="panel-header-titulo">Panel de control</div>
+        <div class="panel-header-sub">Acciones inmediatas por departamento · Caldas, Risaralda, Quindío y Valle del Cauca</div>
       </div>
     </div>
     <div class="panel-header-acciones">
@@ -100,6 +114,15 @@
   <!-- ─── Contenido ───────────────────────────────────────────── -->
   <main id="panelContenido" class="panel-contenido oculto">
 
+    <!-- Enlaces por departamento — solo visible en la pestaña "Todos" -->
+    <section class="tarjeta-panel bloque-enlaces oculto" id="bloqueEnlacesDepartamento">
+      <div class="tarjeta-panel-cabeza">
+        <h2>Enlaces por departamento</h2>
+        <span class="tarjeta-panel-nota">Comparte cada enlace con el equipo de su departamento — abre el dashboard filtrado solo a esos datos</span>
+      </div>
+      <div id="listaEnlacesDepartamento" class="lista-enlaces-departamento"></div>
+    </section>
+
     <!-- Filtros -->
     <section class="panel-filtros" aria-label="Filtros">
       <div class="campo-busqueda">
@@ -107,11 +130,6 @@
         <input type="search" id="filtroTexto" placeholder="Buscar municipio, institución, sede, rector o reportante…" />
       </div>
       <select id="filtroMunicipio"><option value="">Todos los municipios</option></select>
-      <select id="filtroEstado">
-        <option value="">Todos los estados</option>
-        <option value="Completo">Completo</option>
-        <option value="Borrador">Borrador</option>
-      </select>
       <select id="filtroAfectacion">
         <option value="">Toda afectación</option>
         <option value="Estructural">Estructural</option>
@@ -134,39 +152,25 @@
 
     <!-- KPIs -->
     <section class="panel-kpis" aria-label="Indicadores generales">
-      <div class="tarjeta-panel kpi-tile">
-        <span class="kpi-etiqueta">Sedes reportadas</span>
-        <span class="kpi-numero" id="kpiSedes">0</span>
-      </div>
-      <div class="tarjeta-panel kpi-tile">
-        <span class="kpi-etiqueta">Instituciones</span>
-        <span class="kpi-numero" id="kpiInstituciones">0</span>
-      </div>
-      <div class="tarjeta-panel kpi-tile">
+      <div class="tarjeta-panel kpi-tile kpi-tile-municipios">
+        <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-mapa"/></svg></div>
         <span class="kpi-etiqueta">Municipios alcanzados</span>
         <span class="kpi-numero" id="kpiMunicipios">0</span>
       </div>
-      <div class="tarjeta-panel kpi-tile">
-        <span class="kpi-etiqueta">Estudiantes cubiertos</span>
-        <span class="kpi-numero" id="kpiEstudiantes">0</span>
+      <div class="tarjeta-panel kpi-tile kpi-tile-instituciones">
+        <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-edificio"/></svg></div>
+        <span class="kpi-etiqueta">Instituciones</span>
+        <span class="kpi-numero" id="kpiInstituciones">0</span>
       </div>
-      <div class="tarjeta-panel kpi-tile">
-        <span class="kpi-etiqueta">Estado de los reportes</span>
-        <div class="kpi-estado-stats">
-          <div class="kpi-estado-stat kpi-estado-completo">
-            <span class="kpi-estado-numero" id="kpiCompletos">0</span>
-            <span class="kpi-estado-label">Completos</span>
-          </div>
-          <div class="kpi-estado-divisor"></div>
-          <div class="kpi-estado-stat kpi-estado-borrador">
-            <span class="kpi-estado-numero" id="kpiBorradores">0</span>
-            <span class="kpi-estado-label">Borrador</span>
-          </div>
-        </div>
-        <div class="kpi-estado-barra">
-          <div class="kpi-estado-barra-completo" id="kpiEstadoBarraCompleto"></div>
-          <div class="kpi-estado-barra-borrador" id="kpiEstadoBarraBorrador"></div>
-        </div>
+      <div class="tarjeta-panel kpi-tile kpi-tile-sedes">
+        <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-marcador"/></svg></div>
+        <span class="kpi-etiqueta">Sedes reportadas</span>
+        <span class="kpi-numero" id="kpiSedes">0</span>
+      </div>
+      <div class="tarjeta-panel kpi-tile kpi-tile-estudiantes">
+        <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-personas"/></svg></div>
+        <span class="kpi-etiqueta">Estudiantes por atender</span>
+        <span class="kpi-numero" id="kpiEstudiantes">0</span>
       </div>
     </section>
 
@@ -207,9 +211,9 @@
       <div class="tarjeta-panel">
         <div class="tarjeta-panel-cabeza">
           <h2>Aporte del departamento</h2>
-          <span class="tarjeta-panel-nota">Es un solo campo por envío — se cuenta en cada sede de ese envío</span>
+          <span class="tarjeta-panel-nota">Es un solo campo por envío — se muestra como etiqueta por departamento, no por sede</span>
         </div>
-        <div id="graficoAporte" class="barras-horizontales"></div>
+        <div id="aporteDepartamento" class="lista-aporte-departamento"></div>
       </div>
     </section>
 
@@ -229,8 +233,7 @@
               <th data-orden="sede">Sede <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
               <th data-orden="rector">Rector <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
               <th data-orden="estudiantesNum">Estudiantes <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
-              <th data-orden="estado">Estado <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
-              <th data-orden="actualizadoTiempo">Actualizado <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th class="col-ver" aria-hidden="true"></th>
             </tr>
           </thead>
           <tbody id="tablaRegistrosBody"></tbody>
@@ -240,6 +243,8 @@
     </section>
 
   </main>
+
+  <div class="panel-footer">Dashboard diseñado por: Comité de Cafeteros de Caldas</div>
 </div>
 
 <!-- ─── Panel lateral de detalle / edición ─────────────────────── -->
@@ -363,11 +368,6 @@
         <button type="button" class="chip" data-valor="Capacidad">Capacidad</button>
         <button type="button" class="chip" data-valor="Recurso económico">Recurso económico</button>
       </div>
-    </div>
-
-    <div class="campo">
-      <label>Estado</label>
-      <div><span class="badge-estado borrador ed-badge-estado">Borrador</span></div>
     </div>
 
     <div class="editor-acciones">
