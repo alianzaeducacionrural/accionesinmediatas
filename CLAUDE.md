@@ -9,10 +9,13 @@ ejecutar de manera inmediata en instituciones educativas rurales de Caldas,
 Risaralda, Quindío y el Valle del Cauca. Basado en los campos pedidos en
 `BASE DE DATOS EN LÍNEA.docx`.
 
-También existe [dashboard.html](dashboard.html): panel de control con
-consolidado de los 4 departamentos y enlaces filtrados por departamento
-(`?departamento=Caldas`), con edición y eliminación de registros. Sin login,
-URL no enlazada desde `index.html`.
+También existe el dashboard: [dashboard.html](dashboard.html) (consolidado,
+para el equipo central) + 4 páginas dedicadas, una por departamento
+(`dashboard-caldas.html`, `dashboard-risaralda.html`, `dashboard-quindio.html`,
+`dashboard-valle-del-cauca.html`), cada una con su propio token en la URL
+(`?t=...`) para que no sea trivial cambiarle el nombre al departamento y ver
+los datos de otro. Con edición y eliminación de registros. Sin login, URLs
+no enlazadas desde `index.html`.
 
 ## Arquitectura
 
@@ -21,8 +24,12 @@ GAS del usuario). Abre [index.html](index.html) directo en el navegador, o
 sírvelo con `npx serve .`.
 
 ```
-index.html    + css/{tokens,formulario}.css + js/{texto,catalogo,config,formulario}.js
-dashboard.html + css/{tokens,formulario,dashboard}.css + js/{texto,catalogo,config,dashboard}.js
+index.html                       + css/{tokens,formulario}.css + js/{texto,catalogo,config,formulario}.js
+dashboard.html                   + js/dashboard-tokens.js  ┐
+dashboard-caldas.html             (departamento fijo)       ├─ css/{tokens,formulario,dashboard}.css
+dashboard-risaralda.html          (departamento fijo)        │  js/{texto,catalogo,config,dashboard}.js
+dashboard-quindio.html            (departamento fijo)        │
+dashboard-valle-del-cauca.html    (departamento fijo)       ┘
                     ↓ fetch (GET/POST, Content-Type: text/plain)
 gas/Code.gs   (Apps Script standalone, desplegado como Web App)
                     ↓
@@ -68,36 +75,61 @@ Google Sheets "Acciones inmediatas por departamento — Registro" (pestaña "reg
   `registros`. `normalizarCamposRegistro_()` centraliza la normalización y
   validación de campos, reusada por `guardarRegistro_` (upsert, formulario
   público) y `editarRegistro_` (por `id`, dashboard).
-- [dashboard.html](dashboard.html) + [js/dashboard.js](js/dashboard.js) +
-  [css/dashboard.css](css/dashboard.css) — panel de control, sin pasos ni
-  login. `dashboard.html` (sin parámetro) muestra el consolidado de los 4
-  departamentos; `dashboard.html?departamento=Caldas` (o Risaralda, Quindío,
-  `Valle del Cauca`) muestra solo ese departamento — el filtro se resuelve
-  en el propio backend (`todosLosRegistros_`), no solo en el cliente, para
-  que un enlace filtrado nunca haga viajar por la red los datos de los
-  otros departamentos (ver la nota de seguridad al inicio de `cargarDatos()`
-  en `js/dashboard.js`). Pestañas para cambiar de departamento (actualizan
-  la URL); solo entrar o volver a "Todos" dispara el fetch consolidado —
-  cambiar a un departamento específico sin haberlo cargado ya pide un fetch
-  nuevo acotado a ese departamento. La vista consolidada además muestra una
-  tarjeta "Enlaces por departamento" (`renderEnlacesDepartamento()`) con los
-  4 enlaces listos para compartir con cada equipo regional, cada uno con
-  botón "Copiar enlace" (Clipboard API).
-  KPIs (municipios · instituciones · sedes · estudiantes por atender — sin
-  "estado", ver más abajo), gráficos de barras caseros (sin librerías,
-  mismo patrón que `Encuesta Daños por sismo/dashboard.html`) y una tabla
-  ordenable/filtrable donde cada fila termina en un botón "Ver más" muy
-  visible. Clic en la fila o en el botón abre un **modal centrado y grande**
-  (no un panel lateral) con el detalle completo, y desde ahí Editar
-  (formulario clonado de `<template id="tpl-editor-sede">`, reusa
-  `.chip`/`.campo`/`.control`/`.stepper` de `formulario.css` y
-  `nombrePropio()` para la vista previa) o Eliminar (confirmación de dos
-  clics). A diferencia del formulario público, municipio/institución/sede
-  se editan como texto libre (sin la cascada de catálogo de Caldas) porque
-  quien edita ya tiene datos reales que corregir. "Aporte del departamento"
-  **no** se grafica como barras (es un campo global por envío, no por sede
-  — contarlo por fila sobrestimaría el aporte real): se muestra como
-  etiquetas de presencia/ausencia por departamento (`renderAporteDepartamento()`).
+- **Dashboard** — [js/dashboard.js](js/dashboard.js) + [css/dashboard.css](css/dashboard.css),
+  compartidos por 5 páginas HTML, sin pasos ni login:
+  - [dashboard.html](dashboard.html) — vista consolidada de los 4
+    departamentos, para el equipo central. Pestañas para cambiar de
+    departamento (filtran en memoria una vez cargado "Todos" — solo la
+    carga inicial pide red). Es la única página que carga
+    [js/dashboard-tokens.js](js/dashboard-tokens.js) (el mapa
+    `TOKENS_DEPARTAMENTO`), y lo usa para armar la tarjeta "Enlaces por
+    departamento" (`renderEnlacesDepartamento()`): 4 enlaces a las páginas
+    dedicadas de abajo, cada uno con su token, listos para compartir con el
+    equipo regional (botón "Copiar enlace", Clipboard API).
+  - `dashboard-caldas.html` / `dashboard-risaralda.html` /
+    `dashboard-quindio.html` / `dashboard-valle-del-cauca.html` — una
+    página HTML por departamento, casi idénticas a `dashboard.html` salvo
+    un `<script>` inline al final (`window.DASHBOARD_FIJO = { departamento: 'Caldas' }`,
+    etc. — se generaron una vez con un script de un solo uso a partir de
+    `dashboard.html`, no hay que mantenerlas manualmente en sincronía salvo
+    que cambie la plantilla). Sin pestañas (se ocultan solas: `iniciar()`
+    detecta `window.DASHBOARD_FIJO`), sin la tarjeta de enlaces (no aplica).
+    El token se lee de `?t=` en la URL, nunca queda escrito en el archivo —
+    y como estas 4 páginas **no cargan `js/dashboard-tokens.js`**, su
+    código fuente nunca expone los tokens de los otros 3 departamentos.
+  - **Backend**: `todosLosRegistros_` sigue filtrando por departamento en
+    el propio servidor (no solo en el cliente), pero además `doGet` en
+    `gas/Code.gs` exige que `token` coincida con `TOKENS_DEPARTAMENTO[departamento]`
+    cuando se pide un departamento puntual — sin eso, cambiar
+    `?departamento=` a mano ya no alcanza (ni siquiera aplica: estas
+    páginas no leen ese parámetro de la URL, el departamento es fijo por
+    archivo). **Esto es una barrera de obscuridad, no autenticación real**
+    — el token viaja en la URL y, para el equipo central, en el JS de
+    `dashboard.html`. La consolidada (`accion=todosLosRegistros` sin
+    `departamento`) nunca pide token, mismo modelo de siempre ("sin login,
+    URL no enlazada"). Si un token se filtra, hay que generar uno nuevo y
+    actualizarlo en dos sitios: `TOKENS_DEPARTAMENTO` en `gas/Code.gs` y en
+    `js/dashboard-tokens.js` (desplegar el backend con `clasp push --force`
+    + `clasp update-deployment`, y avisar al equipo del enlace nuevo).
+  - **KPIs** (municipios · instituciones · sedes · estudiantes por atender
+    — sin "estado", ver más abajo), gráficos de barras caseros (sin
+    librerías, mismo patrón que `Encuesta Daños por sismo/dashboard.html`)
+    y una tabla ordenable/filtrable donde cada fila termina en un botón
+    "Ver más" muy visible. Clic en la fila o en el botón abre un **modal
+    centrado y grande** (no un panel lateral) con el detalle completo, y
+    desde ahí Editar (formulario clonado de `<template id="tpl-editor-sede">`,
+    reusa `.chip`/`.campo`/`.control`/`.stepper` de `formulario.css` y
+    `nombrePropio()` para la vista previa) o Eliminar (confirmación de dos
+    clics). A diferencia del formulario público, municipio/institución/sede
+    se editan como texto libre (sin la cascada de catálogo de Caldas)
+    porque quien edita ya tiene datos reales que corregir. "Aporte del
+    departamento" **no** se grafica como barras (es un campo global por
+    envío, no por sede — contarlo por fila sobrestimaría el aporte real):
+    se muestra como etiquetas de presencia/ausencia por departamento
+    (`renderAporteDepartamento()`). Botón "Descargar Excel"
+    (`descargarCsv()`) exporta un CSV con BOM UTF-8 de lo que esté
+    filtrado en pantalla — en una página de departamento fijo, solo puede
+    exportar ese departamento.
 
 **Contrato del backend** (mismo patrón `{ ok, data | error }` que el resto
 de proyectos GAS del usuario):
@@ -106,7 +138,7 @@ de proyectos GAS del usuario):
 |---|---|---|
 | GET | `reportantes` | nombre/correo/teléfono/departamento más recientes por reportante — autocompletar |
 | GET | `misRegistros&reportante=Nombre` | sedes ya guardadas por ese reportante |
-| GET | `todosLosRegistros[&departamento=]` | todas las filas, o solo las de un departamento — lo consume `dashboard.html` |
+| GET | `todosLosRegistros[&departamento=&token=]` | todas las filas, o solo las de un departamento (exige `token` correcto — `TOKENS_DEPARTAMENTO` en `gas/Code.gs`) — lo consumen las 5 páginas del dashboard |
 | GET | `rectoresConocidos` | último rector (nombre/correo/teléfono) por institución ya diligenciada — autocompletar |
 | POST | `guardarRegistro` | upsert por clave natural `Departamento\|Municipio\|Institución\|Sede` |
 | POST | `editarRegistro` | actualiza por `id`, sin restricción de reportante (panel sin sesión) |

@@ -49,6 +49,18 @@ var COL = {
 
 var DEPARTAMENTOS_VALIDOS = ['Caldas', 'Risaralda', 'Quindío', 'Valle del Cauca'];
 
+// Token de acceso por departamento para los dashboards dedicados
+// (dashboard-caldas.html, etc.) — ver la nota de seguridad en
+// todosLosRegistros_ más abajo: esto es una barrera de obscuridad, no
+// autenticación real, pero evita que cambiar "?departamento=" a mano en la
+// URL alcance para ver otro departamento.
+var TOKENS_DEPARTAMENTO = {
+  'Caldas': 'PQ3FTqLG5G469e',
+  'Risaralda': '11awJ3W8cHkLtc',
+  'Quindío': 'h3tGG2LAVd7ODX',
+  'Valle del Cauca': 'yTfW8Rtjfw5iHD',
+};
+
 // ─── Router HTTP ────────────────────────────────────────────
 
 function doGet(e) {
@@ -56,7 +68,16 @@ function doGet(e) {
     var accion = (e && e.parameter && e.parameter.accion) || '';
     if (accion === 'reportantes') return jsonResponse(reportantes_());
     if (accion === 'misRegistros') return jsonResponse(misRegistros_((e.parameter && e.parameter.reportante) || ''));
-    if (accion === 'todosLosRegistros') return jsonResponse(todosLosRegistros_((e.parameter && e.parameter.departamento) || ''));
+    if (accion === 'todosLosRegistros') {
+      var departamento = (e.parameter && e.parameter.departamento) || '';
+      if (departamento) {
+        var token = (e.parameter && e.parameter.token) || '';
+        if (!token || TOKENS_DEPARTAMENTO[departamento] !== token) {
+          return errorResponse('Enlace no válido para ' + departamento + '.');
+        }
+      }
+      return jsonResponse(todosLosRegistros_(departamento));
+    }
     if (accion === 'rectoresConocidos') return jsonResponse(rectoresConocidos_());
     return errorResponse('Acción no reconocida: ' + accion);
   } catch (err) {
@@ -194,8 +215,13 @@ function misRegistros_(nombreReportante) {
 // Todas las filas (o solo las de un departamento) — a diferencia de
 // misRegistros_, no filtra por reportante. La consume el dashboard. El
 // filtro por departamento vive aquí, no solo en el cliente, para que un
-// enlace filtrado (dashboard.html?departamento=X) nunca haga viajar por la
-// red los datos de los otros departamentos.
+// enlace filtrado nunca haga viajar por la red los datos de los otros
+// departamentos. Cuando se pide un departamento puntual, doGet exige
+// además el token correcto (TOKENS_DEPARTAMENTO) — sin eso, cambiar
+// "?departamento=" a mano en la URL no alcanza para ver otro departamento.
+// No es autenticación real (el token viaja en la URL y en el JS de
+// dashboard.html), pero sube la barrera bastante más allá de "editar un
+// parámetro".
 
 function todosLosRegistros_(departamento) {
   var sheet = getSheet_('registros');

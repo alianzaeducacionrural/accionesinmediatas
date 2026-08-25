@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-<title>Panel de control — Acciones inmediatas por departamento</title>
+<title>Panel de control — Risaralda</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <link rel="stylesheet" href="css/tokens.css" />
 <link rel="stylesheet" href="css/formulario.css" />
@@ -90,7 +90,7 @@
       <div class="panel-header-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-mapa"/></svg></div>
       <div>
         <div class="panel-header-titulo">Panel de control</div>
-        <div class="panel-header-sub">Acciones inmediatas por departamento · Caldas, Risaralda, Quindío y Valle del Cauca</div>
+        <div class="panel-header-sub">Acciones inmediatas — Risaralda</div>
       </div>
     </div>
     <div class="panel-header-acciones">
@@ -385,14 +385,14 @@
   </form>
 </template>
 
+<!-- Departamento fijo de esta página — el token de acceso se lee de la
+     URL (?t=), nunca queda escrito aquí. Esta página NO carga
+     js/dashboard-tokens.js: su código fuente nunca expone los tokens de
+     los otros 3 departamentos. -->
+<script>window.DASHBOARD_FIJO = { departamento: 'Risaralda' };</script>
 <script src="js/texto.js"></script>
 <script src="js/catalogo.js"></script>
 <script src="js/config.js"></script>
-<!-- Solo este dashboard (el consolidado, para el equipo central) carga los
-     tokens por departamento — las páginas dashboard-<departamento>.html no
-     lo incluyen, así que su código fuente nunca expone los tokens de los
-     otros departamentos. -->
-<script src="js/dashboard-tokens.js"></script>
 <script src="js/dashboard.js"></script>
 </body>
 </html>

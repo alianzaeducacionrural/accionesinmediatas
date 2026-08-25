@@ -1,11 +1,26 @@
 // ================================================
 // PANEL DE CONTROL — Acciones inmediatas por departamento
-// Trae todos los registros (accion=todosLosRegistros[&departamento=]) y arma
-// KPIs, gráficos caseros (sin librerías) y una tabla con edición/eliminación
-// directa. Una sola página: dashboard.html sin parámetro = consolidado de
-// los 4 departamentos; dashboard.html?departamento=Caldas = solo ese
-// departamento, con el filtro aplicado en el propio backend (ver nota de
-// seguridad en cargarDatos).
+// Trae todos los registros (accion=todosLosRegistros[&departamento=&token=])
+// y arma KPIs, gráficos caseros (sin librerías) y una tabla con
+// edición/eliminación directa.
+//
+// Este script lo comparten 5 páginas:
+//  - dashboard.html: vista consolidada de los 4 departamentos, para el
+//    equipo central (pestañas para cambiar de departamento, sin token —
+//    usa el mapa TOKENS_DEPARTAMENTO de js/dashboard-tokens.js, que SOLO
+//    carga esta página).
+//  - dashboard-caldas.html / dashboard-risaralda.html / dashboard-quindio.html
+//    / dashboard-valle-del-cauca.html: un departamento fijo cada una
+//    (window.DASHBOARD_FIJO, definido en un <script> inline propio de cada
+//    archivo), sin pestañas, con el token leído de la URL (?t=...) — nunca
+//    cargan dashboard-tokens.js, así que el código fuente de estas páginas
+//    nunca expone los tokens de los otros departamentos.
+//
+// El backend (doGet en gas/Code.gs) exige el token correcto cuando se pide
+// un departamento puntual — es una barrera de obscuridad (el token viaja
+// en la URL y en el JS del dashboard consolidado), no autenticación real,
+// pero evita que cambiar "?departamento=" a mano alcance para ver otro
+// departamento.
 // ================================================
 
 const CATEGORIAS_AFECTACION = [
@@ -33,6 +48,12 @@ let departamentoActivo = null; // null = "Todos"
 let modoConsolidado = false;
 let orden = { campo: 'actualizadoTiempo', dir: 'desc' };
 
+// Solo en las páginas de departamento fijo (dashboard-caldas.html, etc.):
+// departamentoFijo viene de window.DASHBOARD_FIJO (inline en cada archivo),
+// tokenActual del parámetro ?t= de la URL que se compartió con ese equipo.
+let departamentoFijo = null;
+let tokenActual = '';
+
 document.addEventListener('DOMContentLoaded', iniciar);
 
 function iniciar() {
@@ -42,7 +63,15 @@ function iniciar() {
   document.getElementById('btnActualizar').addEventListener('click', recargarDatosActuales);
   document.getElementById('btnReintentarCarga').addEventListener('click', recargarDatosActuales);
   document.getElementById('btnDescargarExcel').addEventListener('click', descargarCsv);
-  cambiarPestana(departamentoDeUrl());
+
+  if (window.DASHBOARD_FIJO) {
+    departamentoFijo = window.DASHBOARD_FIJO.departamento;
+    tokenActual = new URLSearchParams(location.search).get('t') || '';
+    document.getElementById('panelPestanas').classList.add('oculto');
+    cambiarPestana(departamentoFijo);
+  } else {
+    cambiarPestana(null);
+  }
 }
 
 // ─── Utilidades ──────────────────────────────────────────────
@@ -122,19 +151,6 @@ function poblarPestanas() {
   });
 }
 
-function departamentoDeUrl() {
-  const params = new URLSearchParams(location.search);
-  const d = params.get('departamento');
-  return DEPARTAMENTOS.indexOf(d) !== -1 ? d : null;
-}
-
-function actualizarUrlPestana(depto) {
-  const url = new URL(location.href);
-  if (depto) url.searchParams.set('departamento', depto);
-  else url.searchParams.delete('departamento');
-  history.replaceState(null, '', url);
-}
-
 // Cambia de pestaña. La carga de datos respeta la nota de seguridad de
 // cargarDatos(): solo entrar o volver a "Todos" trae el consolidado; cambiar
 // a un departamento específico sin haber cargado ya el consolidado dispara
@@ -145,7 +161,6 @@ async function cambiarPestana(depto) {
   document.querySelectorAll('#panelPestanas .pestana').forEach((btn) => {
     btn.classList.toggle('activa', (btn.dataset.depto || null) === depto);
   });
-  actualizarUrlPestana(depto);
 
   if (depto === null && !modoConsolidado) {
     await cargarDatos(null);
@@ -173,7 +188,14 @@ async function cargarDatos(depto) {
 
   try {
     const params = { accion: 'todosLosRegistros' };
-    if (depto) params.departamento = depto;
+    if (depto) {
+      params.departamento = depto;
+      // Solo las páginas de departamento fijo piden un departamento puntual
+      // desde cero (el dashboard consolidado siempre carga "Todos" primero
+      // y después filtra en memoria — nunca vuelve a pedir un departamento
+      // solo, así que nunca necesita adjuntar un token aquí).
+      if (departamentoFijo) params.token = tokenActual;
+    }
     const data = await getGAS(params);
     registros = data.map(prepararFila);
 
@@ -187,6 +209,8 @@ async function cargarDatos(depto) {
   } catch (err) {
     document.getElementById('panelCargando').classList.add('oculto');
     document.getElementById('panelError').classList.remove('oculto');
+    const mensaje = document.getElementById('panelErrorMensaje');
+    if (mensaje) mensaje.textContent = err.message || 'No se pudo cargar la información.';
   }
 }
 
@@ -272,19 +296,28 @@ function renderizarTodo() {
   actualizarEncabezadosOrden();
 }
 
-// Solo tiene sentido en la pestaña "Todos": comparte los enlaces filtrados
-// de cada departamento para que se puedan repartir al equipo regional.
+// Los 4 departamentos válidos son un conjunto fijo (DEPARTAMENTOS en
+// js/catalogo.js) — un reemplazo literal es más simple y confiable aquí
+// que un rango Unicode de diacríticos para un solo caso (Quindío).
+function slugDepartamento(depto) {
+  return depto.replace('í', 'i').toLowerCase().replace(/\s+/g, '-');
+}
+
+// Solo tiene sentido en la pestaña "Todos" del dashboard consolidado: cada
+// enlace apunta a la página dedicada de ese departamento (dashboard-caldas.html,
+// etc.) con su token — solo se puede armar aquí porque este dashboard es el
+// único que carga js/dashboard-tokens.js.
 function renderEnlacesDepartamento() {
   const bloque = document.getElementById('bloqueEnlacesDepartamento');
-  if (departamentoActivo) {
+  if (departamentoActivo || typeof TOKENS_DEPARTAMENTO === 'undefined') {
     bloque.classList.add('oculto');
     return;
   }
   bloque.classList.remove('oculto');
-  const base = location.origin + location.pathname;
+  const base = location.href.slice(0, location.href.lastIndexOf('/') + 1);
   const cont = document.getElementById('listaEnlacesDepartamento');
   cont.innerHTML = DEPARTAMENTOS.map((d) => {
-    const url = `${base}?departamento=${encodeURIComponent(d)}`;
+    const url = `${base}dashboard-${slugDepartamento(d)}.html?t=${encodeURIComponent(TOKENS_DEPARTAMENTO[d])}`;
     return `
       <div class="enlace-departamento-item">
         <a href="${escaparHtml(url)}">${iconoSvg('icono-enlace')} ${escaparHtml(d)}</a>
@@ -506,15 +539,8 @@ function actualizarEncabezadosOrden() {
 // puede exportar los datos de ese departamento — nunca llegaron los otros
 // tres al navegador (misma nota de seguridad que cargarDatos()).
 
-// Los 4 departamentos válidos son un conjunto fijo (DEPARTAMENTOS en
-// js/catalogo.js) — un reemplazo literal es más simple y confiable aquí
-// que un rango Unicode de diacríticos para un solo caso (Quindío).
 function sufijoArchivo() {
-  if (!departamentoActivo) return 'todos';
-  return departamentoActivo
-    .replace('í', 'i')
-    .toLowerCase()
-    .replace(/\s+/g, '-');
+  return departamentoActivo ? slugDepartamento(departamentoActivo) : 'todos';
 }
 
 function descargarCsv() {
