@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>Panel de control — Acciones inmediatas por departamento</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="stylesheet" href="css/tokens.css" />
+<link rel="stylesheet" href="css/formulario.css" />
+<link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body class="cuerpo-panel">
+
+<!-- ─── Sprite de íconos (SVG en línea, trazo único) ───────── -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icono-mapa" viewBox="0 0 24 24">
+    <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z" stroke-linejoin="round"/>
+    <path d="M9 4v14M15 6v14"/>
+  </symbol>
+  <symbol id="icono-marcador" viewBox="0 0 24 24">
+    <path d="M12 21s7-6.1 7-11.5a7 7 0 0 0-14 0C5 14.9 12 21 12 21Z"/>
+    <circle cx="12" cy="9.5" r="2.4"/>
+  </symbol>
+  <symbol id="icono-mas" viewBox="0 0 24 24">
+    <path d="M12 5v14M5 12h14"/>
+  </symbol>
+  <symbol id="icono-menos" viewBox="0 0 24 24">
+    <path d="M5 12h14"/>
+  </symbol>
+  <symbol id="icono-x" viewBox="0 0 24 24">
+    <path d="m6 6 12 12M18 6 6 18"/>
+  </symbol>
+  <symbol id="icono-basura" viewBox="0 0 24 24">
+    <path d="M4 7h16"/>
+    <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>
+    <path d="M10 11v6M14 11v6"/>
+  </symbol>
+  <symbol id="icono-alerta" viewBox="0 0 24 24">
+    <path d="M12 4 22 20H2Z" stroke-linejoin="round"/>
+    <path d="M12 10.2v3.6"/>
+    <circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="icono-lapiz" viewBox="0 0 24 24">
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="icono-buscar" viewBox="0 0 24 24">
+    <circle cx="11" cy="11" r="7"/>
+    <path d="m21 21-4.3-4.3"/>
+  </symbol>
+  <symbol id="icono-refrescar" viewBox="0 0 24 24">
+    <path d="M4 12a8 8 0 0 1 14-5.2M20 12a8 8 0 0 1-14 5.2"/>
+    <path d="M18 3v4.4h-4.4M6 21v-4.4h4.4"/>
+  </symbol>
+  <symbol id="icono-orden" viewBox="0 0 24 24">
+    <path d="M8 5v14M8 5 4.5 8.5M8 5l3.5 3.5"/>
+    <path d="M16 19V5M16 19l3.5-3.5M16 19l-3.5-3.5"/>
+  </symbol>
+  <symbol id="icono-personas" viewBox="0 0 24 24">
+    <circle cx="9" cy="8" r="3"/>
+    <path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/>
+    <circle cx="17" cy="9" r="2.4"/>
+    <path d="M15.3 13.1a4.3 4.3 0 0 1 5.2 4.2"/>
+  </symbol>
+</svg>
+
+<div class="panel-shell">
+
+  <!-- ─── Barra superior ──────────────────────────────────────── -->
+  <header class="panel-header">
+    <div class="panel-header-marca">
+      <svg class="icono-svg" aria-hidden="true"><use href="#icono-mapa"/></svg>
+      <div>
+        <div class="panel-header-titulo">Panel de control — Acciones inmediatas por departamento</div>
+        <div class="panel-header-sub">Comité de Cafeteros · instituciones educativas rurales de Caldas, Risaralda, Quindío y Valle del Cauca</div>
+      </div>
+    </div>
+    <div class="panel-header-acciones">
+      <span class="panel-actualizado" id="panelActualizado"></span>
+      <button type="button" class="btn-panel" id="btnActualizar">
+        <svg class="icono-svg" aria-hidden="true"><use href="#icono-refrescar"/></svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── Pestañas por departamento ───────────────────────────── -->
+  <nav class="panel-pestanas" id="panelPestanas" aria-label="Departamento"></nav>
+
+  <!-- ─── Estado de carga / error ─────────────────────────────── -->
+  <div id="panelCargando" class="panel-estado">
+    <div class="spinner"></div>
+    <p>Cargando información…</p>
+  </div>
+  <div id="panelError" class="panel-estado oculto">
+    <svg class="icono-svg" aria-hidden="true"><use href="#icono-alerta"/></svg>
+    <p>No se pudo cargar la información. <button type="button" class="btn-texto" id="btnReintentarCarga">Reintentar</button></p>
+  </div>
+
+  <!-- ─── Contenido ───────────────────────────────────────────── -->
+  <main id="panelContenido" class="panel-contenido oculto">
+
+    <!-- Filtros -->
+    <section class="panel-filtros" aria-label="Filtros">
+      <div class="campo-busqueda">
+        <svg class="icono-svg" aria-hidden="true"><use href="#icono-buscar"/></svg>
+        <input type="search" id="filtroTexto" placeholder="Buscar municipio, institución, sede, rector o reportante…" />
+      </div>
+      <select id="filtroMunicipio"><option value="">Todos los municipios</option></select>
+      <select id="filtroEstado">
+        <option value="">Todos los estados</option>
+        <option value="Completo">Completo</option>
+        <option value="Borrador">Borrador</option>
+      </select>
+      <select id="filtroAfectacion">
+        <option value="">Toda afectación</option>
+        <option value="Estructural">Estructural</option>
+        <option value="Cubierta y techos">Cubierta y techos</option>
+        <option value="Pisos y andenes">Pisos y andenes</option>
+        <option value="Baterías sanitarias">Baterías sanitarias</option>
+        <option value="Acueducto / agua potable">Acueducto / agua potable</option>
+        <option value="Energía eléctrica">Energía eléctrica</option>
+        <option value="Conectividad / internet">Conectividad / internet</option>
+        <option value="Mobiliario y dotación">Mobiliario y dotación</option>
+        <option value="Restaurante escolar / cocina">Restaurante escolar / cocina</option>
+        <option value="Vías de acceso">Vías de acceso</option>
+        <option value="Zonas deportivas">Zonas deportivas</option>
+        <option value="Vivienda de docentes">Vivienda de docentes</option>
+        <option value="Otra">Otra</option>
+        <option value="Sin afectaciones">Sin afectaciones</option>
+      </select>
+      <button type="button" class="btn-texto" id="btnLimpiarFiltros">Limpiar filtros</button>
+    </section>
+
+    <!-- KPIs -->
+    <section class="panel-kpis" aria-label="Indicadores generales">
+      <div class="tarjeta-panel kpi-tile">
+        <span class="kpi-etiqueta">Sedes reportadas</span>
+        <span class="kpi-numero" id="kpiSedes">0</span>
+      </div>
+      <div class="tarjeta-panel kpi-tile">
+        <span class="kpi-etiqueta">Instituciones</span>
+        <span class="kpi-numero" id="kpiInstituciones">0</span>
+      </div>
+      <div class="tarjeta-panel kpi-tile">
+        <span class="kpi-etiqueta">Municipios alcanzados</span>
+        <span class="kpi-numero" id="kpiMunicipios">0</span>
+      </div>
+      <div class="tarjeta-panel kpi-tile">
+        <span class="kpi-etiqueta">Estudiantes cubiertos</span>
+        <span class="kpi-numero" id="kpiEstudiantes">0</span>
+      </div>
+      <div class="tarjeta-panel kpi-tile">
+        <span class="kpi-etiqueta">Estado de los reportes</span>
+        <div class="kpi-estado-stats">
+          <div class="kpi-estado-stat kpi-estado-completo">
+            <span class="kpi-estado-numero" id="kpiCompletos">0</span>
+            <span class="kpi-estado-label">Completos</span>
+          </div>
+          <div class="kpi-estado-divisor"></div>
+          <div class="kpi-estado-stat kpi-estado-borrador">
+            <span class="kpi-estado-numero" id="kpiBorradores">0</span>
+            <span class="kpi-estado-label">Borrador</span>
+          </div>
+        </div>
+        <div class="kpi-estado-barra">
+          <div class="kpi-estado-barra-completo" id="kpiEstadoBarraCompleto"></div>
+          <div class="kpi-estado-barra-borrador" id="kpiEstadoBarraBorrador"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gráficos -->
+    <section class="panel-graficos">
+      <div class="tarjeta-panel" id="bloqueGraficoDepartamento">
+        <div class="tarjeta-panel-cabeza">
+          <h2>Sedes por departamento</h2>
+          <span class="tarjeta-panel-nota">Click en una barra para ir a ese departamento</span>
+        </div>
+        <div id="graficoDepartamento" class="barras-horizontales"></div>
+      </div>
+
+      <div class="tarjeta-panel">
+        <div class="tarjeta-panel-cabeza">
+          <h2>Sedes por municipio</h2>
+          <span class="tarjeta-panel-nota" id="notaMunicipios"></span>
+        </div>
+        <div id="graficoMunicipio" class="barras-horizontales"></div>
+      </div>
+
+      <div class="tarjeta-panel">
+        <div class="tarjeta-panel-cabeza">
+          <h2>Tipos de afectación</h2>
+          <span class="tarjeta-panel-nota">Una sede puede tener varias — el total puede superar el número de sedes</span>
+        </div>
+        <div id="graficoAfectaciones" class="barras-horizontales"></div>
+      </div>
+
+      <div class="tarjeta-panel">
+        <div class="tarjeta-panel-cabeza">
+          <h2>Acciones sugeridas</h2>
+          <span class="tarjeta-panel-nota">Una sede puede tener varias</span>
+        </div>
+        <div id="graficoAcciones" class="barras-horizontales"></div>
+      </div>
+
+      <div class="tarjeta-panel">
+        <div class="tarjeta-panel-cabeza">
+          <h2>Aporte del departamento</h2>
+          <span class="tarjeta-panel-nota">Es un solo campo por envío — se cuenta en cada sede de ese envío</span>
+        </div>
+        <div id="graficoAporte" class="barras-horizontales"></div>
+      </div>
+    </section>
+
+    <!-- Tabla -->
+    <section class="tarjeta-panel panel-tabla-wrap" id="panelTablaWrap">
+      <div class="tarjeta-panel-cabeza">
+        <h2>Todas las sedes</h2>
+        <span class="tarjeta-panel-nota" id="notaTabla"></span>
+      </div>
+      <div class="tabla-scroll">
+        <table class="tabla-panel tabla-registros" id="tablaRegistros">
+          <thead>
+            <tr>
+              <th class="col-departamento" data-orden="departamento">Departamento <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th data-orden="municipio">Municipio <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th data-orden="institucion">Institución <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th data-orden="sede">Sede <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th data-orden="rector">Rector <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th data-orden="estudiantesNum">Estudiantes <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th data-orden="estado">Estado <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th data-orden="actualizadoTiempo">Actualizado <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+            </tr>
+          </thead>
+          <tbody id="tablaRegistrosBody"></tbody>
+        </table>
+      </div>
+      <p class="tabla-vacia oculto" id="tablaVacia">No hay sedes que coincidan con los filtros.</p>
+    </section>
+
+  </main>
+</div>
+
+<!-- ─── Panel lateral de detalle / edición ─────────────────────── -->
+<div id="panelDetalle" class="panel-detalle oculto">
+  <div class="panel-detalle-fondo" data-role="detalle-cerrar"></div>
+  <div class="panel-detalle-caja">
+    <button type="button" class="panel-detalle-cerrar" data-role="detalle-cerrar" title="Cerrar">
+      <svg class="icono-svg" aria-hidden="true"><use href="#icono-x"/></svg>
+    </button>
+    <div id="panelDetalleCuerpo"></div>
+  </div>
+</div>
+
+<!-- ─── Template del formulario de edición de una sede ─────────── -->
+<template id="tpl-editor-sede">
+  <form class="form-editor" novalidate>
+    <div class="campo">
+      <label>Departamento <span class="req">*</span></label>
+      <select class="control ed-departamento" required></select>
+    </div>
+    <div class="campo-fila">
+      <div class="campo">
+        <label>Municipio <span class="req">*</span></label>
+        <input class="control ed-municipio" required />
+      </div>
+      <div class="campo">
+        <label>Vereda</label>
+        <input class="control ed-vereda" />
+      </div>
+    </div>
+    <div class="campo">
+      <label>Institución educativa <span class="req">*</span></label>
+      <input class="control ed-institucion" required />
+    </div>
+    <div class="campo">
+      <label>Sede <span class="req">*</span></label>
+      <input class="control ed-sede" required />
+    </div>
+
+    <div class="campo">
+      <label>Nombre del rector</label>
+      <input class="control ed-rector" />
+    </div>
+    <div class="campo-fila">
+      <div class="campo">
+        <label>Teléfono del rector</label>
+        <input class="control ed-rector-telefono" type="tel" />
+      </div>
+      <div class="campo">
+        <label>Correo del rector</label>
+        <input class="control ed-rector-correo" type="email" />
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Reportante <span class="req">*</span></label>
+      <input class="control ed-reportante" required />
+    </div>
+    <div class="campo-fila">
+      <div class="campo">
+        <label>Correo del reportante</label>
+        <input class="control ed-reportante-correo" type="email" />
+      </div>
+      <div class="campo">
+        <label>Teléfono del reportante</label>
+        <input class="control ed-reportante-telefono" type="tel" />
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Número de estudiantes</label>
+      <div class="stepper">
+        <button type="button" class="btn-restar" aria-label="Restar"><svg class="icono-svg"><use href="#icono-menos"></use></svg></button>
+        <input class="control ed-estudiantes" type="number" min="0" step="1" placeholder="0" />
+        <button type="button" class="btn-sumar" aria-label="Sumar"><svg class="icono-svg"><use href="#icono-mas"></use></svg></button>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Afectaciones</label>
+      <div class="chips ed-chips-afectacion">
+        <button type="button" class="chip" data-valor="Estructural">Estructural</button>
+        <button type="button" class="chip" data-valor="Cubierta y techos">Cubierta y techos</button>
+        <button type="button" class="chip" data-valor="Pisos y andenes">Pisos y andenes</button>
+        <button type="button" class="chip" data-valor="Baterías sanitarias">Baterías sanitarias</button>
+        <button type="button" class="chip" data-valor="Acueducto / agua potable">Acueducto / agua potable</button>
+        <button type="button" class="chip" data-valor="Energía eléctrica">Energía eléctrica</button>
+        <button type="button" class="chip" data-valor="Conectividad / internet">Conectividad / internet</button>
+        <button type="button" class="chip" data-valor="Mobiliario y dotación">Mobiliario y dotación</button>
+        <button type="button" class="chip" data-valor="Restaurante escolar / cocina">Restaurante escolar / cocina</button>
+        <button type="button" class="chip" data-valor="Vías de acceso">Vías de acceso</button>
+        <button type="button" class="chip" data-valor="Zonas deportivas">Zonas deportivas</button>
+        <button type="button" class="chip" data-valor="Vivienda de docentes">Vivienda de docentes</button>
+        <button type="button" class="chip" data-valor="Otra">Otra</button>
+        <button type="button" class="chip" data-valor="Sin afectaciones" data-sin-afectaciones>Sin afectaciones</button>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Descripción de las afectaciones</label>
+      <textarea class="control ed-descripcion"></textarea>
+    </div>
+
+    <div class="campo">
+      <label>Acciones sugeridas</label>
+      <div class="chips ed-chips-acciones">
+        <button type="button" class="chip chip-accion" data-valor="Ruta de apoyo psicosocial y socioemocional para niños, docentes y familias">Ruta de apoyo psicosocial y socioemocional (niños, docentes y familias)</button>
+        <button type="button" class="chip chip-accion" data-valor="Campamentos, carpas o aulas temporales con baterías sanitarias temporales">Campamentos, carpas o aulas temporales con baterías sanitarias</button>
+        <button type="button" class="chip chip-accion" data-valor="Reposición de mobiliario, guías y dotación de restaurante u otros elementos afectados">Reposición de mobiliario, guías y dotación de restaurante</button>
+        <button type="button" class="chip chip-accion" data-valor="Otra" data-chip-otra>Otra</button>
+      </div>
+      <div class="campo-accion-otra oculto">
+        <textarea class="control ed-accion-otra" placeholder="Describe la otra acción inmediata…"></textarea>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Aporte del departamento</label>
+      <div class="chips ed-chips-aporte">
+        <button type="button" class="chip" data-valor="Especie">Especie</button>
+        <button type="button" class="chip" data-valor="Capacidad">Capacidad</button>
+        <button type="button" class="chip" data-valor="Recurso económico">Recurso económico</button>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Estado</label>
+      <div><span class="badge-estado borrador ed-badge-estado">Borrador</span></div>
+    </div>
+
+    <div class="editor-acciones">
+      <button type="button" class="btn btn-secundario ed-cancelar">Cancelar</button>
+      <button type="submit" class="btn btn-primario ed-guardar">Guardar cambios</button>
+    </div>
+  </form>
+</template>
+
+<script src="js/texto.js"></script>
+<script src="js/catalogo.js"></script>
+<script src="js/config.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

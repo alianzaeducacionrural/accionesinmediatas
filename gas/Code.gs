@@ -56,6 +56,7 @@ function doGet(e) {
     var accion = (e && e.parameter && e.parameter.accion) || '';
     if (accion === 'reportantes') return jsonResponse(reportantes_());
     if (accion === 'misRegistros') return jsonResponse(misRegistros_((e.parameter && e.parameter.reportante) || ''));
+    if (accion === 'todosLosRegistros') return jsonResponse(todosLosRegistros_((e.parameter && e.parameter.departamento) || ''));
     return errorResponse('Acción no reconocida: ' + accion);
   } catch (err) {
     return errorResponse(err.message);
@@ -69,6 +70,8 @@ function doPost(e) {
     switch (accion) {
       case 'guardarRegistro':
         return jsonResponse(guardarRegistro_(datos));
+      case 'editarRegistro':
+        return jsonResponse(editarRegistro_(datos));
       case 'eliminarRegistro':
         return jsonResponse(eliminarRegistro_(datos));
       default:
@@ -186,6 +189,25 @@ function misRegistros_(nombreReportante) {
   return resultado;
 }
 
+// ─── GET ?accion=todosLosRegistros[&departamento=...] ───────
+// Todas las filas (o solo las de un departamento) — a diferencia de
+// misRegistros_, no filtra por reportante. La consume el dashboard. El
+// filtro por departamento vive aquí, no solo en el cliente, para que un
+// enlace filtrado (dashboard.html?departamento=X) nunca haga viajar por la
+// red los datos de los otros departamentos.
+
+function todosLosRegistros_(departamento) {
+  var sheet = getSheet_('registros');
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  var filas = sheet.getRange(2, 1, lastRow - 1, HEADERS_REGISTROS.length).getValues();
+  var resultado = filas.map(filaAObjeto_);
+  if (departamento) {
+    resultado = resultado.filter(function (r) { return r.departamento === departamento; });
+  }
+  return resultado;
+}
+
 function filaAObjeto_(f) {
   var afectaciones = [];
   try { afectaciones = JSON.parse(f[COL.AFECTACIONES - 1] || '[]'); } catch (e) { afectaciones = []; }
@@ -245,7 +267,7 @@ function siguienteId_(sheet) {
 // nombrePropio_() antes de guardarse. Departamento, municipio, institución
 // y sede son obligatorios; el resto puede llegar vacío (queda "Borrador").
 
-function guardarRegistro_(datos) {
+function normalizarCamposRegistro_(datos) {
   var reportante = String((datos.reportante && datos.reportante.nombre) || '').trim();
   var correoReportante = String((datos.reportante && datos.reportante.correo) || '').trim();
   var telefonoReportante = String((datos.reportante && datos.reportante.telefono) || '').trim();
@@ -272,32 +294,51 @@ function guardarRegistro_(datos) {
   if (!institucion) throw new Error('Falta la institución educativa.');
   if (!sede) throw new Error('Falta la sede.');
 
+  return {
+    reportante: reportante, correoReportante: correoReportante, telefonoReportante: telefonoReportante,
+    departamento: departamento, municipio: municipio, vereda: vereda, institucion: institucion, sede: sede,
+    rector: rector, correoRector: correoRector, telefonoRector: telefonoRector,
+    numeroEstudiantes: numeroEstudiantes, afectaciones: afectaciones,
+    descripcionAfectaciones: descripcionAfectaciones, accionesSugeridas: accionesSugeridas,
+    aporteDepartamento: aporteDepartamento,
+  };
+}
+
+function estadoRegistro_(campos) {
+  var tieneContenido = !!(campos.rector || campos.correoRector || campos.telefonoRector ||
+    campos.numeroEstudiantes !== '' || campos.afectaciones.length || campos.descripcionAfectaciones ||
+    campos.accionesSugeridas.length || campos.aporteDepartamento.length);
+  return tieneContenido ? 'Completo' : 'Borrador';
+}
+
+function guardarRegistro_(datos) {
+  var campos = normalizarCamposRegistro_(datos);
+
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
     var sheet = getSheet_('registros');
     asegurarEncabezadoRegistros_(sheet);
 
-    var clave = claveRegistro_(departamento, municipio, institucion, sede);
+    var clave = claveRegistro_(campos.departamento, campos.municipio, campos.institucion, campos.sede);
     var existente = buscarFilaPorClave_(sheet, clave);
-    var esPropio = existente && normalizarClave_(existente.valores[COL.REPORTANTE - 1]) === normalizarClave_(reportante);
+    var esPropio = existente && normalizarClave_(existente.valores[COL.REPORTANTE - 1]) === normalizarClave_(campos.reportante);
     if (existente && !esPropio) {
-      throw new Error('La sede "' + sede + '" ya fue registrada por ' + existente.valores[COL.REPORTANTE - 1] + '.');
+      throw new Error('La sede "' + campos.sede + '" ya fue registrada por ' + existente.valores[COL.REPORTANTE - 1] + '.');
     }
 
-    var tieneContenido = !!(rector || correoRector || telefonoRector || numeroEstudiantes !== '' || afectaciones.length || descripcionAfectaciones || accionesSugeridas.length || aporteDepartamento.length);
-    var estado = tieneContenido ? 'Completo' : 'Borrador';
+    var estado = estadoRegistro_(campos);
     var ahora = new Date();
 
     var fila = [
       existente ? existente.valores[COL.ID - 1] : siguienteId_(sheet),
       existente ? existente.valores[1] : ahora,
       ahora,
-      reportante, correoReportante, comoTexto_(telefonoReportante),
-      departamento, municipio, vereda, institucion, sede, rector,
-      correoRector, comoTexto_(telefonoRector),
-      numeroEstudiantes, JSON.stringify(afectaciones), descripcionAfectaciones,
-      JSON.stringify(accionesSugeridas), JSON.stringify(aporteDepartamento), estado,
+      campos.reportante, campos.correoReportante, comoTexto_(campos.telefonoReportante),
+      campos.departamento, campos.municipio, campos.vereda, campos.institucion, campos.sede, campos.rector,
+      campos.correoRector, comoTexto_(campos.telefonoRector),
+      campos.numeroEstudiantes, JSON.stringify(campos.afectaciones), campos.descripcionAfectaciones,
+      JSON.stringify(campos.accionesSugeridas), JSON.stringify(campos.aporteDepartamento), estado,
     ];
 
     if (existente) {
@@ -312,13 +353,62 @@ function guardarRegistro_(datos) {
   }
 }
 
+// ─── POST accion=editarRegistro ─────────────────────────────
+// Actualiza por id, sin restricción de reportante: a diferencia de
+// guardarRegistro_ (formulario público, upsert por clave natural + dueño),
+// esta acción la usa el dashboard, un panel administrativo sin sesión de
+// reportante. Conserva la Marca temporal original y recalcula Estado.
+
+function editarRegistro_(datos) {
+  var id = String(datos.id || '').trim();
+  if (!id) throw new Error('Falta el id del registro.');
+  var campos = normalizarCamposRegistro_(datos);
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var sheet = getSheet_('registros');
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) throw new Error('No hay registros.');
+    var filas = sheet.getRange(2, 1, lastRow - 1, HEADERS_REGISTROS.length).getValues();
+
+    var numeroFila = -1, original = null;
+    for (var i = 0; i < filas.length; i++) {
+      if (String(filas[i][COL.ID - 1]) === id) { numeroFila = i + 2; original = filas[i]; break; }
+    }
+    if (numeroFila === -1) throw new Error('No se encontró el registro.');
+
+    var clave = claveRegistro_(campos.departamento, campos.municipio, campos.institucion, campos.sede);
+    for (var j = 0; j < filas.length; j++) {
+      if (String(filas[j][COL.ID - 1]) === id) continue;
+      var claveOtra = claveRegistro_(filas[j][COL.DEPARTAMENTO - 1], filas[j][COL.MUNICIPIO - 1], filas[j][COL.INSTITUCION - 1], filas[j][COL.SEDE - 1]);
+      if (claveOtra === clave) throw new Error('Ya existe otra sede con esa combinación de Departamento/Municipio/Institución/Sede.');
+    }
+
+    var estado = estadoRegistro_(campos);
+    var fila = [
+      id, original[1], new Date(),
+      campos.reportante, campos.correoReportante, comoTexto_(campos.telefonoReportante),
+      campos.departamento, campos.municipio, campos.vereda, campos.institucion, campos.sede, campos.rector,
+      campos.correoRector, comoTexto_(campos.telefonoRector),
+      campos.numeroEstudiantes, JSON.stringify(campos.afectaciones), campos.descripcionAfectaciones,
+      JSON.stringify(campos.accionesSugeridas), JSON.stringify(campos.aporteDepartamento), estado,
+    ];
+    sheet.getRange(numeroFila, 1, 1, fila.length).setValues([fila]);
+    return { id: id, estado: estado };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // ─── POST accion=eliminarRegistro ───────────────────────────
-// Borra una fila por id, solo si pertenece al mismo reportante que la pide
-// (mismo criterio de propiedad que guardarRegistro_).
+// Borra una fila por id. Sin restricción de reportante: la usan tanto el
+// formulario público (borrar lo propio, aunque hoy no hay un flujo de
+// cliente que lo llame) como el dashboard (panel administrativo sin sesión
+// de reportante).
 
 function eliminarRegistro_(datos) {
   var id = String(datos.id || '').trim();
-  var reportante = String((datos.reportante && datos.reportante.nombre) || '').trim();
   if (!id) throw new Error('Falta el id del registro.');
 
   var lock = LockService.getScriptLock();
@@ -331,9 +421,6 @@ function eliminarRegistro_(datos) {
     var filas = sheet.getRange(2, 1, lastRow - 1, HEADERS_REGISTROS.length).getValues();
     for (var i = 0; i < filas.length; i++) {
       if (String(filas[i][COL.ID - 1]) === id) {
-        if (normalizarClave_(filas[i][COL.REPORTANTE - 1]) !== normalizarClave_(reportante)) {
-          throw new Error('Ese registro no pertenece a este reportante.');
-        }
         sheet.deleteRow(i + 2);
         return { eliminado: true };
       }

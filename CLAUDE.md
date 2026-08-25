@@ -9,10 +9,10 @@ ejecutar de manera inmediata en instituciones educativas rurales de Caldas,
 Risaralda, Quindío y el Valle del Cauca. Basado en los campos pedidos en
 `BASE DE DATOS EN LÍNEA.docx`.
 
-El panel de administración (vista por departamento, edición de registros)
-**todavía no está construido** — por ahora solo existe el formulario de
-captura. Ver el plan completo en `C:\Users\alejo\.claude\plans\hola-chat-necesito-generar-idempotent-hoare.md`
-si se retoma esa parte.
+También existe [dashboard.html](dashboard.html): panel de control con
+consolidado de los 4 departamentos y enlaces filtrados por departamento
+(`?departamento=Caldas`), con edición y eliminación de registros. Sin login,
+URL no enlazada desde `index.html`.
 
 ## Arquitectura
 
@@ -21,7 +21,8 @@ GAS del usuario). Abre [index.html](index.html) directo en el navegador, o
 sírvelo con `npx serve .`.
 
 ```
-index.html + css/{tokens,formulario}.css + js/{texto,catalogo,config,formulario}.js
+index.html    + css/{tokens,formulario}.css + js/{texto,catalogo,config,formulario}.js
+dashboard.html + css/{tokens,formulario,dashboard}.css + js/{texto,catalogo,config,dashboard}.js
                     ↓ fetch (GET/POST, Content-Type: text/plain)
 gas/Code.gs   (Apps Script standalone, desplegado como Web App)
                     ↓
@@ -55,7 +56,29 @@ Google Sheets "Acciones inmediatas por departamento — Registro" (pestaña "reg
   vez en el formulario.
 - [gas/Code.gs](gas/Code.gs) — backend. `inicializar()` crea el spreadsheet
   (una vez) dentro de la carpeta de Drive del proyecto y siembra la pestaña
-  `registros`.
+  `registros`. `normalizarCamposRegistro_()` centraliza la normalización y
+  validación de campos, reusada por `guardarRegistro_` (upsert, formulario
+  público) y `editarRegistro_` (por `id`, dashboard).
+- [dashboard.html](dashboard.html) + [js/dashboard.js](js/dashboard.js) +
+  [css/dashboard.css](css/dashboard.css) — panel de control, sin pasos ni
+  login. `dashboard.html` (sin parámetro) muestra el consolidado de los 4
+  departamentos; `dashboard.html?departamento=Caldas` (o Risaralda, Quindío,
+  `Valle del Cauca`) muestra solo ese departamento — el filtro se resuelve
+  en el propio backend (`todosLosRegistros_`), no solo en el cliente, para
+  que un enlace filtrado nunca haga viajar por la red los datos de los
+  otros departamentos (ver la nota de seguridad al inicio de `cargarDatos()`
+  en `js/dashboard.js`). Pestañas para cambiar de departamento (actualizan
+  la URL); solo entrar o volver a "Todos" dispara el fetch consolidado —
+  cambiar a un departamento específico sin haberlo cargado ya pide un fetch
+  nuevo acotado a ese departamento. KPIs, gráficos de barras caseros (sin
+  librerías, mismo patrón que `Encuesta Daños por sismo/dashboard.html`) y
+  una tabla ordenable/filtrable. Cada fila abre un panel lateral de detalle
+  con botones Editar (formulario clonado de `<template id="tpl-editor-sede">`,
+  reusa `.chip`/`.campo`/`.control`/`.stepper`/`.badge-estado` de
+  `formulario.css` y `nombrePropio()` para la vista previa) y Eliminar
+  (confirmación de dos clics). A diferencia del formulario público,
+  municipio/institución/sede se editan como texto libre (sin la cascada de
+  catálogo de Caldas) porque quien edita ya tiene datos reales que corregir.
 
 **Contrato del backend** (mismo patrón `{ ok, data | error }` que el resto
 de proyectos GAS del usuario):
@@ -64,8 +87,10 @@ de proyectos GAS del usuario):
 |---|---|---|
 | GET | `reportantes` | nombre/correo/teléfono/departamento más recientes por reportante — autocompletar |
 | GET | `misRegistros&reportante=Nombre` | sedes ya guardadas (Borrador o Completo) por ese reportante |
+| GET | `todosLosRegistros[&departamento=]` | todas las filas, o solo las de un departamento — lo consume `dashboard.html` |
 | POST | `guardarRegistro` | upsert por clave natural `Departamento\|Municipio\|Institución\|Sede` |
-| POST | `eliminarRegistro` | borra por `id`, solo si pertenece al mismo reportante |
+| POST | `editarRegistro` | actualiza por `id`, sin restricción de reportante (panel sin sesión) |
+| POST | `eliminarRegistro` | borra por `id`, sin restricción de reportante |
 
 El `POST` siempre usa `Content-Type: text/plain` con body `JSON.stringify(...)`
 — intencional, evita el preflight CORS que Apps Script no maneja. **No
