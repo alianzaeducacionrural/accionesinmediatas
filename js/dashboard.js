@@ -70,8 +70,12 @@ function iniciar() {
     document.getElementById('panelPestanas').classList.add('oculto');
     // La tarjeta "Aporte del departamento" de la grilla de gráficos queda
     // redundante aquí (un solo departamento en pantalla) — se reemplaza
-    // por las etiquetas junto al título.
+    // por las etiquetas junto al título. Con ella y "Sedes por
+    // departamento" ocultas, quedan 3 tarjetas en una grilla de 2
+    // columnas — "Acciones sugeridas" pasa a ocupar el ancho completo en
+    // vez de dejar un hueco vacío al lado.
     document.getElementById('bloqueAporteDepartamento').classList.add('oculto');
+    document.getElementById('bloqueGraficoAcciones').classList.add('grafico-ancho-completo');
     document.getElementById('bloqueDepartamentoTitulo').classList.remove('oculto');
     document.getElementById('departamentoTitulo').textContent = departamentoFijo;
     cambiarPestana(departamentoFijo);
@@ -244,10 +248,12 @@ function configurarFiltrosEventos() {
   document.getElementById('filtroTexto').addEventListener('input', debounce(renderizarTodo, 200));
   document.getElementById('filtroMunicipio').addEventListener('change', renderizarTodo);
   document.getElementById('filtroAfectacion').addEventListener('change', renderizarTodo);
+  document.getElementById('filtroAcciones').addEventListener('change', renderizarTodo);
   document.getElementById('btnLimpiarFiltros').addEventListener('click', () => {
     document.getElementById('filtroTexto').value = '';
     document.getElementById('filtroMunicipio').value = '';
     document.getElementById('filtroAfectacion').value = '';
+    document.getElementById('filtroAcciones').value = '';
     renderizarTodo();
   });
 
@@ -265,11 +271,19 @@ function obtenerFiltrados() {
   const texto = document.getElementById('filtroTexto').value.trim().toLowerCase();
   const municipio = document.getElementById('filtroMunicipio').value;
   const afectacion = document.getElementById('filtroAfectacion').value;
+  const accion = document.getElementById('filtroAcciones').value;
 
   let lista = registros.filter((r) => {
     if (departamentoActivo && r.departamento !== departamentoActivo) return false;
     if (municipio && r.municipio !== municipio) return false;
     if (afectacion && !(r.afectaciones || []).includes(afectacion)) return false;
+    if (accion) {
+      const acciones = r.accionesSugeridas || [];
+      const coincide = accion === '__otra__'
+        ? acciones.some((a) => ACCIONES_PREDEFINIDAS.indexOf(a) === -1)
+        : acciones.includes(accion);
+      if (!coincide) return false;
+    }
     if (texto) {
       const haystack = `${r.municipio} ${r.institucion} ${r.sede} ${r.rector || ''} ${r.reportante || ''}`.toLowerCase();
       if (!haystack.includes(texto)) return false;
@@ -464,9 +478,16 @@ function renderGraficoAcciones(filtrados) {
   const entradas = ACCIONES_PREDEFINIDAS
     .filter((a) => conteo[a])
     .map((a) => ({ clave: a, etiqueta: ETIQUETAS_ACCIONES[a], total: conteo[a] }));
-  if (otras) entradas.push({ clave: '__otra__', etiqueta: 'Otra (texto libre)', total: otras });
+  if (otras) entradas.push({ clave: '__otra__', etiqueta: 'Otra', total: otras });
   entradas.sort((a, b) => b.total - a.total);
-  renderBarrasSimple('graficoAcciones', entradas, { color: 'var(--indigo-600)' });
+  renderBarrasSimple('graficoAcciones', entradas, {
+    color: 'var(--indigo-600)',
+    onClick: (clave) => {
+      const sel = document.getElementById('filtroAcciones');
+      sel.value = sel.value === clave ? '' : clave;
+      renderizarTodo();
+    },
+  });
 }
 
 // Aporte del departamento es un campo global por envío (no por sede): no

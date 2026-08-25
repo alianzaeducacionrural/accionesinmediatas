@@ -165,6 +165,13 @@
         <option value="Otra">Otra</option>
         <option value="Sin afectaciones">Sin afectaciones</option>
       </select>
+      <select id="filtroAcciones">
+        <option value="">Toda acción sugerida</option>
+        <option value="Ruta de apoyo psicosocial y socioemocional para niños, docentes y familias">Ruta de apoyo psicosocial y socioemocional</option>
+        <option value="Campamentos, carpas o aulas temporales con baterías sanitarias temporales">Campamentos/aulas temporales con baterías sanitarias</option>
+        <option value="Reposición de mobiliario, guías y dotación de restaurante u otros elementos afectados">Reposición de mobiliario y dotación de restaurante</option>
+        <option value="__otra__">Otra</option>
+      </select>
       <button type="button" class="btn-texto" id="btnLimpiarFiltros">Limpiar filtros</button>
     </section>
 
@@ -218,7 +225,7 @@
         <div id="graficoAfectaciones" class="barras-horizontales"></div>
       </div>
 
-      <div class="tarjeta-panel">
+      <div class="tarjeta-panel" id="bloqueGraficoAcciones">
         <div class="tarjeta-panel-cabeza">
           <h2>Acciones sugeridas</h2>
           <span class="tarjeta-panel-nota">Una sede puede tener varias</span>

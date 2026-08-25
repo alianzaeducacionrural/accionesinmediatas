@@ -183,6 +183,7 @@
 /* ─── Gráficos: barras horizontales caseras ────────────────── */
 
 .panel-graficos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 18px; }
+.grafico-ancho-completo { grid-column: 1 / -1; }
 
 .barras-horizontales { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; overflow-x: hidden; padding-right: 4px; }
 
