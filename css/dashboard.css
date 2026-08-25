@@ -237,6 +237,7 @@
 }
 .tabla-panel thead th:hover { color: var(--indigo-700); }
 .tabla-panel thead th .icono-orden { width: 11px; height: 11px; opacity: 0.35; margin-left: 2px; vertical-align: -1px; }
+.tabla-panel thead th .th-sub { display: block; font-size: 0.62rem; font-weight: 400; text-transform: none; letter-spacing: normal; color: var(--tinta-400); margin-top: 2px; }
 .tabla-panel thead th.orden-activo .icono-orden { opacity: 1; color: var(--indigo-600); }
 .tabla-panel thead th.orden-desc .icono-orden { transform: scaleY(-1); }
 
@@ -251,8 +252,8 @@
 .tabla-panel tbody tr:not(:last-child) { border-bottom: 1px solid var(--borde-suave); }
 .tabla-panel td { padding: 11px 14px; color: var(--tinta-700); white-space: nowrap; }
 .tabla-panel td.col-institucion, .tabla-panel td.col-sede { white-space: normal; max-width: 220px; }
-.tabla-panel td.col-aporte { white-space: normal; max-width: 200px; }
-.tabla-panel td.col-aporte .chips-solo-lectura { gap: 4px; }
+.tabla-panel td.col-aporte { white-space: nowrap; }
+.tabla-panel td.col-aporte .chips-solo-lectura { flex-wrap: nowrap; gap: 4px; }
 .tabla-panel td.col-estudiantes { font-variant-numeric: tabular-nums; text-align: right; }
 .tabla-panel th[data-orden="estudiantesNum"] { text-align: right; }
 
@@ -329,7 +330,7 @@
 .chip-lectura {
   font-size: 0.78rem; font-weight: 600; color: var(--indigo-700);
   background: var(--indigo-50); border: 1px solid var(--indigo-100);
-  border-radius: var(--radio-pill); padding: 4px 11px;
+  border-radius: var(--radio-pill); padding: 4px 11px; white-space: nowrap;
 }
 
 .detalle-acciones-panel { display: flex; gap: 10px; margin-top: 22px; }
