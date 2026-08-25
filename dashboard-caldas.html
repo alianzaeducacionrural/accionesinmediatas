@@ -111,7 +111,7 @@
   <div class="departamento-titulo-bloque oculto" id="bloqueDepartamentoTitulo">
     <h1 class="departamento-titulo" id="departamentoTitulo"></h1>
     <div class="departamento-aporte">
-      <span class="departamento-aporte-etiqueta">Aporte del departamento</span>
+      <span class="departamento-aporte-etiqueta">Aporte del departamento (Comité de Cafeteros y otros aliados)</span>
       <div class="departamento-aporte-chips" id="departamentoAporteChips"></div>
     </div>
   </div>
@@ -179,23 +179,18 @@
     <section class="panel-kpis" aria-label="Indicadores generales">
       <div class="tarjeta-panel kpi-tile kpi-tile-municipios">
         <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-mapa"/></svg></div>
-        <span class="kpi-etiqueta">Municipios alcanzados</span>
+        <span class="kpi-etiqueta">Municipios reportados</span>
         <span class="kpi-numero" id="kpiMunicipios">0</span>
       </div>
       <div class="tarjeta-panel kpi-tile kpi-tile-instituciones">
         <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-edificio"/></svg></div>
-        <span class="kpi-etiqueta">Instituciones</span>
+        <span class="kpi-etiqueta">Instituciones educativas reportadas</span>
         <span class="kpi-numero" id="kpiInstituciones">0</span>
       </div>
       <div class="tarjeta-panel kpi-tile kpi-tile-sedes">
         <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-marcador"/></svg></div>
-        <span class="kpi-etiqueta">Sedes reportadas</span>
+        <span class="kpi-etiqueta">Sedes educativas reportadas</span>
         <span class="kpi-numero" id="kpiSedes">0</span>
-      </div>
-      <div class="tarjeta-panel kpi-tile kpi-tile-estudiantes">
-        <div class="kpi-icono"><svg class="icono-svg" aria-hidden="true"><use href="#icono-personas"/></svg></div>
-        <span class="kpi-etiqueta">Estudiantes por atender</span>
-        <span class="kpi-numero" id="kpiEstudiantes">0</span>
       </div>
     </section>
 
@@ -230,12 +225,12 @@
           <h2>Acciones sugeridas</h2>
           <span class="tarjeta-panel-nota">Una sede puede tener varias</span>
         </div>
-        <div id="graficoAcciones" class="barras-horizontales"></div>
+        <div id="graficoAcciones" class="barras-horizontales barras-acciones"></div>
       </div>
 
       <div class="tarjeta-panel" id="bloqueAporteDepartamento">
         <div class="tarjeta-panel-cabeza">
-          <h2>Aporte del departamento</h2>
+          <h2>Aporte del departamento (Comité de Cafeteros y otros aliados)</h2>
           <span class="tarjeta-panel-nota">Es un solo campo por envío — se muestra como etiqueta por departamento, no por sede</span>
         </div>
         <div id="aporteDepartamento" class="lista-aporte-departamento"></div>
@@ -258,6 +253,7 @@
               <th data-orden="sede">Sede <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
               <th data-orden="rector">Rector <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
               <th data-orden="estudiantesNum">Estudiantes <svg class="icono-svg icono-orden" aria-hidden="true"><use href="#icono-orden"/></svg></th>
+              <th class="col-aporte">Aporte del departamento</th>
               <th class="col-ver" aria-hidden="true"></th>
             </tr>
           </thead>

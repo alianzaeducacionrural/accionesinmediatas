@@ -369,9 +369,6 @@ function renderKpis(filtrados) {
 
   const municipios = new Set(filtrados.map((r) => `${r.departamento}|${r.municipio}`.toLowerCase()));
   document.getElementById('kpiMunicipios').textContent = municipios.size;
-
-  const estudiantes = filtrados.reduce((acc, r) => acc + (r.estudiantesNum || 0), 0);
-  document.getElementById('kpiEstudiantes').textContent = estudiantes.toLocaleString('es-CO');
 }
 
 // ─── Gráficos: barras horizontales caseras ──────────────────
@@ -379,7 +376,7 @@ function renderKpis(filtrados) {
 // cinco gráficos — todos son "conteo por categoría", ninguno necesita
 // segmentos apilados.
 
-function renderBarrasSimple(contenedorId, entradas, { color = 'var(--indigo-500)', vacio = 'Sin datos para los filtros actuales.', onClick } = {}) {
+function renderBarrasSimple(contenedorId, entradas, { color = 'var(--indigo-500)', vacio = 'Sin datos para los filtros actuales.', onClick, formatoValor = (total) => total } = {}) {
   const cont = document.getElementById(contenedorId);
   if (!entradas.length) {
     cont.innerHTML = `<p class="tabla-vacia">${vacio}</p>`;
@@ -391,7 +388,7 @@ function renderBarrasSimple(contenedorId, entradas, { color = 'var(--indigo-500)
       <div class="fila-barra${onClick ? ' fila-barra-click' : ''}" data-clave="${escaparHtml(e.clave)}">
         <span class="etiqueta-barra" title="${escaparHtml(e.etiqueta)}">${escaparHtml(e.etiqueta)}</span>
         <div class="pista-barra"><div class="segmento" style="width:${Math.round((e.total / max) * 100)}%; background-color:${color};"></div></div>
-        <span class="valor-barra">${e.total}</span>
+        <span class="valor-barra">${escaparHtml(formatoValor(e.total))}</span>
       </div>`)
     .join('');
   if (onClick) {
@@ -482,6 +479,7 @@ function renderGraficoAcciones(filtrados) {
   entradas.sort((a, b) => b.total - a.total);
   renderBarrasSimple('graficoAcciones', entradas, {
     color: 'var(--indigo-600)',
+    formatoValor: (total) => `${total} sede${total === 1 ? '' : 's'}`,
     onClick: (clave) => {
       const sel = document.getElementById('filtroAcciones');
       sel.value = sel.value === clave ? '' : clave;
@@ -563,6 +561,7 @@ function renderTabla(filtrados) {
         <td class="col-sede">${escaparHtml(r.sede)}</td>
         <td>${escaparHtml(r.rector || '—')}</td>
         <td class="col-estudiantes">${r.estudiantesNum != null ? escaparHtml(r.estudiantesNum) : '—'}</td>
+        <td class="col-aporte">${(r.aporteDepartamento || []).length ? `<div class="chips-solo-lectura">${r.aporteDepartamento.map((a) => `<span class="chip-lectura">${escaparHtml(a)}</span>`).join('')}</div>` : '—'}</td>
         <td class="col-ver"><button type="button" class="btn-ver-mas">Ver más ${iconoSvg('icono-chevron')}</button></td>
       </tr>`)
     .join('');
